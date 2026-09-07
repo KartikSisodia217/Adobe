@@ -1,0 +1,23 @@
+{
+  "name": "brand-ai-readiness-audit",
+  "version": "1.0.0",
+  "skills": [
+    {
+      "id": "audit-orchestrator",
+      "path": "skills/audit-orchestrator",
+      "entrypoint": true
+    },
+    {
+      "id": "access-content-auditor",
+      "path": "skills/access-content-auditor"
+    },
+    {
+      "id": "fact-integrity-auditor",
+      "path": "skills/fact-integrity-auditor"
+    },
+    {
+      "id": "engagement-auditor",
+      "path": "skills/engagement-auditor"
+    }
+  ]
+}
