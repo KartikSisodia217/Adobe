@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JS Only Example</title>
+</head>
+<body>
+    <main>
+        <div id="product-container">
+            <!-- Loaded via JS -->
+        </div>
+    </main>
+    <script>
+        document.getElementById('product-container').innerHTML = `
+            <h1>Dynamic Product</h1>
+            <p>Price: $99.00</p>
+        `;
+    </script>
+</body>
+</html>
