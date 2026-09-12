@@ -19,8 +19,9 @@ def run_access_content_audit(context: AuditContext) -> Tuple[List[StructuredFact
         url = str(raw_page.url)
         
         # Extract facts from JSON-LD
-        json_ld_facts = parse_json_ld_facts(raw_page.html_content, url)
+        json_ld_facts, proactive_findings = parse_json_ld_facts(raw_page.html_content, url)
         all_facts.extend(json_ld_facts)
+        all_findings.extend(proactive_findings)
         
         # Extract facts from Raw HTML
         raw_html_facts = extract_facts_from_html(raw_page.html_content, url, source="raw_html")

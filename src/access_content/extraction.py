@@ -1,19 +1,35 @@
 import extruct
 from bs4 import BeautifulSoup
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 import re
 from src.schemas.v1.facts import StructuredFact, FactType, FactSource
 from src.schemas.v1.findings import CandidateFinding
 from pydantic import HttpUrl
 
-def parse_json_ld_facts(html_content: str, url: str) -> List[StructuredFact]:
+def parse_json_ld_facts(html_content: str, url: str) -> Tuple[List[StructuredFact], List[CandidateFinding]]:
+    # extruct robustly handles malformed JSON-LD by skipping or partially parsing it
     data = extruct.extract(html_content, syntaxes=['json-ld'])
     json_ld_data = data.get('json-ld', [])
     
     facts = []
+    proactive_findings = []
+    
     for item in json_ld_data:
         item_type = item.get('@type', '')
         if item_type == 'Product':
+            # Proactive Schema Validation
+            missing_props = [p for p in ['description', 'image', 'sku'] if p not in item]
+            if missing_props:
+                proactive_findings.append(CandidateFinding(
+                    detector_id="P-01",
+                    mechanism="schema optimization",
+                    confidence="high",
+                    affected_entity="Product Schema",
+                    evidence_items=[{"missing_properties": missing_props}],
+                    category="discoverability",
+                    page_urls=[HttpUrl(url)]
+                ))
+                
             if 'name' in item:
                 facts.append(StructuredFact(fact_type="product_name", value=str(item['name']), source="json_ld", page_url=HttpUrl(url)))
             if 'offers' in item:
@@ -35,14 +51,29 @@ def parse_json_ld_facts(html_content: str, url: str) -> List[StructuredFact]:
         elif item_type == 'Organization':
             if 'name' in item:
                 facts.append(StructuredFact(fact_type="organization_name", value=str(item['name']), source="json_ld", page_url=HttpUrl(url)))
-    return facts
+                
+    return facts, proactive_findings
 
 def extract_html_text(html_content: str) -> str:
     soup = BeautifulSoup(html_content, 'lxml')
+    
+    # HTML Noise Filter: ignore non-content blocks
+    for tag in soup(['nav', 'aside', 'script', 'style', 'noscript', 'header']):
+        tag.decompose()
+        
     texts = []
-    for tag in ['main', 'article', 'h1', 'footer']:
+    # Fallback logic if modern tags are missing
+    targets = soup.find_all(['main', 'article'])
+    if not targets:
+        targets = soup.find_all('body')
+        
+    for el in targets:
+        texts.append(el.get_text(separator=' ', strip=True))
+        
+    for tag in ['h1', 'footer']:
         for el in soup.find_all(tag):
             texts.append(el.get_text(separator=' ', strip=True))
+            
     return ' '.join(texts).lower()
 
 def extract_facts_from_html(html_content: str, url: str, source: FactSource) -> List[StructuredFact]:
