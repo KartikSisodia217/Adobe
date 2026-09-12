@@ -9,3 +9,6 @@ class StructuredFact(BaseModel):
     value: str
     source: FactSource
     page_url: HttpUrl
+    entity: str = "Unknown"
+    currency: str = "Unknown"
+    metadata: dict = {}

@@ -18,16 +18,19 @@ def fact(kind, value):
     return StructuredFact(fact_type=kind, value=value, source="raw_html", page_url=HttpUrl("https://example.com/"))
 
 
-def adapter(tree, *, blocked=False, click_error=False, close_on_escape=False, close_on_click=False, trace=None):
-    state = {"blocked": blocked}
+def adapter(tree, *, blocked=False, click_error=False, close_on_escape=False, close_on_click=False, trace=None, click_changes_url=True):
+    state = {"blocked": blocked, "url": "https://example.com/1"}
     async def press(key):
         if close_on_escape and key == "Escape": state["blocked"] = False
     async def click(role, name):
         if click_error: raise RuntimeError("unreachable")
         if close_on_click and role == "button": state["blocked"] = False
+        if click_changes_url: state["url"] = "https://example.com/2"
     async def name(role): return None
     async def focus(limit): return (trace or ["modal-button"] * limit)[:limit]
-    return BrowserAdapter(tree, press, click, name, focus, lambda: state["blocked"])
+    async def route_blocked(): return state["blocked"]
+    async def get_url(): return state["url"]
+    return BrowserAdapter(tree, press, click, name, focus, route_blocked, get_url)
 
 
 @pytest.mark.asyncio
@@ -65,7 +68,11 @@ async def test_g02_genuine_focus_trap():
 async def test_g03_reachable_and_broken_route():
     tree = {"role":"navigation", "children":[{"role":"link", "name":"About"}]}
     assert await run_interactive_tests(adapter(tree), context()) == []
+    
     result = await run_interactive_tests(adapter(tree, click_error=True), context())
+    assert [f.detector_id for f in result] == ["G-03"]
+    
+    result = await run_interactive_tests(adapter(tree, click_changes_url=False), context())
     assert [f.detector_id for f in result] == ["G-03"]
 
 
@@ -101,7 +108,8 @@ async def test_engagement_detector_failure_is_isolated():
         async def press(self, _): pass
         async def click(self, role, _):
             if role == "link": raise RuntimeError("bad route")
-        def is_primary_route_blocked(self): return False
+        async def is_primary_route_blocked(self): return False
         async def bounded_focus_trace(self, max_steps=8): return []
+        async def get_url(self): return "url"
     result = await run_interactive_tests(BrokenAdapter(), context())
     assert {f.detector_id for f in result} == {"G-01", "G-03"}

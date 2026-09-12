@@ -10,16 +10,21 @@ class BrowserAdapter:
                  click_fn: Callable[[str, str], Awaitable[None]],
                  computed_name_fn: Callable[[str], Awaitable[Optional[str]]],
                  trace_fn: Callable[[int], Awaitable[List[str]]],
-                 route_blocked_fn: Callable[[], bool]):
+                 route_blocked_fn: Callable[[], Awaitable[bool]],
+                 get_url_fn: Callable[[], Awaitable[str]]):
         self._accessibility_tree = accessibility_tree
         self._press_fn = press_fn
         self._click_fn = click_fn
         self._computed_name_fn = computed_name_fn
         self._trace_fn = trace_fn
         self._route_blocked_fn = route_blocked_fn
+        self._get_url_fn = get_url_fn
 
     def get_accessibility_tree(self) -> Dict[str, Any]:
         return self._accessibility_tree
+
+    async def get_url(self) -> str:
+        return await self._get_url_fn()
 
     async def press(self, key: str) -> None:
         await self._press_fn(key)
@@ -30,8 +35,8 @@ class BrowserAdapter:
     async def get_computed_accessible_name(self, role: str) -> Optional[str]:
         return await self._computed_name_fn(role)
 
-    def is_primary_route_blocked(self) -> bool:
-        return self._route_blocked_fn()
+    async def is_primary_route_blocked(self) -> bool:
+        return await self._route_blocked_fn()
 
     async def bounded_focus_trace(self, max_steps: int = 5) -> list:
         return await self._trace_fn(max_steps)
@@ -55,8 +60,17 @@ def create_adapter(page, accessibility_tree: Dict[str, Any]) -> BrowserAdapter:
         except Exception:
             return None
 
-    def route_blocked_fn() -> bool:
-        return False
+    async def route_blocked_fn() -> bool:
+        # Check if body is inert, has a visible modal dialog, or overflow is hidden (common trap indicators)
+        return await page.evaluate('''() => {
+            const hasModal = document.querySelectorAll('dialog[open], [role="dialog"], [aria-modal="true"]').length > 0;
+            const isBodyInert = document.body.inert;
+            const isBodyHidden = window.getComputedStyle(document.body).overflow === 'hidden';
+            return hasModal || isBodyInert || isBodyHidden;
+        }''')
+        
+    async def get_url_fn() -> str:
+        return page.url
 
     async def trace_fn(max_steps: int) -> List[str]:
         max_steps = min(max_steps, 12)
@@ -73,5 +87,6 @@ def create_adapter(page, accessibility_tree: Dict[str, Any]) -> BrowserAdapter:
         click_fn=click_fn,
         computed_name_fn=computed_name_fn,
         trace_fn=trace_fn,
-        route_blocked_fn=route_blocked_fn
+        route_blocked_fn=route_blocked_fn,
+        get_url_fn=get_url_fn
     )

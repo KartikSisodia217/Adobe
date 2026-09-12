@@ -2,8 +2,10 @@ from datetime import datetime, timezone
 from typing import List, Dict
 from src.schemas.v1 import AuditContext, FinalFinding, ProactiveSuggestion, AuditReport, Summary, Coverage, ExternalCalls
 
-def generate_narrative(summary: Summary, findings: List[FinalFinding]) -> str:
+def generate_narrative(summary: Summary, findings: List[FinalFinding], context: AuditContext) -> str:
     if summary.total_findings == 0:
+        if context.budgets_consumed.get("pages_rendered", 0) == 0:
+            return "No issues were detected within the observed coverage; however, browser rendering failed for all pages, so engagement and JS-rendering findings are completely unavailable."
         return "Excellent! The website appears highly optimized for AI discoverability and on-site engagement. No critical visibility traps or accessibility barriers were detected during the audit."
     
     parts = []
@@ -34,7 +36,7 @@ def build_report(context: AuditContext, findings: List[FinalFinding], proactive:
     )
     
     # Add generated narrative to summary
-    summary.narrative = generate_narrative(summary, findings)
+    summary.narrative = generate_narrative(summary, findings, context)
     
     roles_sampled = list(set([p.page_role for p in context.raw_pages]))
     

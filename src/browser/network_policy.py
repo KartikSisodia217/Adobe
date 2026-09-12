@@ -24,8 +24,8 @@ class NetworkPolicy:
             return False
 
     async def handle_route(self, route: Route, request: Request):
-        # 1. Method check (allow standard web methods)
-        if request.method.upper() not in ["GET", "OPTIONS", "HEAD", "POST"]:
+        # 1. Method check (allow safe read-only methods, block site-altering POSTs)
+        if request.method.upper() not in ["GET", "OPTIONS", "HEAD"]:
             await route.abort()
             return
             

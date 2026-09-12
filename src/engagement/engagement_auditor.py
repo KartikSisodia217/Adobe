@@ -82,6 +82,8 @@ async def _modal_trap(browser: BrowserAdapter, tree: dict, context: AuditContext
 
 
 async def _navigation(browser: BrowserAdapter, tree: dict, context: AuditContext) -> list[CandidateFinding]:
+    original_url = await browser.get_url()
+    
     for node, parents in _walk(tree):
         if str(node.get("role", "")).casefold() != "link" or not _text(node):
             continue
@@ -89,7 +91,13 @@ async def _navigation(browser: BrowserAdapter, tree: dict, context: AuditContext
             continue
         try:
             await browser.click("link", _text(node))
-            return []
+            # Verify actual URL transition
+            new_url = await browser.get_url()
+            if new_url != original_url:
+                return []
+            else:
+                return [_candidate("G-03", "primary-route-unreachable", _text(node),
+                    [{"route_name": _text(node), "error": "Click succeeded but URL did not change"}], context, "medium")]
         except Exception as exc:
             return [_candidate("G-03", "primary-route-unreachable", _text(node),
                 [{"route_name": _text(node), "error": type(exc).__name__}], context, "medium")]
