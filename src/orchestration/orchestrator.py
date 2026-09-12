@@ -29,8 +29,7 @@ from src.reporting.report_builder import build_report, build_minimal_error_repor
 async def execute_audit(input_url: str) -> dict:
     start_time = time.monotonic()
     
-
-    try:
+    async def _do_audit() -> dict:
         logger.info(f"Starting audit for {input_url}", extra={"phase": "start", "url": input_url})
         # 1-2. Validate & Normalize
         try:
@@ -143,11 +142,13 @@ async def execute_audit(input_url: str) -> dict:
         context.budgets_consumed["runtime_ms"] = int((time.monotonic() - start_time) * 1000)
         report = build_report(context, final_findings, proactive)
         
-
         logger.info("Audit complete", extra={"phase": "report_generation", "budget_consumption": context.budgets_consumed})
         return report.model_dump(mode='json')
 
-
+    try:
+        return await asyncio.wait_for(_do_audit(), timeout=180.0)
+    except asyncio.TimeoutError:
+        return build_minimal_error_report(input_url, "Global 180s timeout exceeded").model_dump(mode='json')
     except Exception as e:
         # Fallback for unexpected bugs
         return build_minimal_error_report(input_url, f"Unexpected error: {str(e)}").model_dump(mode='json')
