@@ -95,6 +95,48 @@ def check_schema_contradiction(raw_facts: List[StructuredFact], url: str) -> Lis
             
     return findings
 
+from thefuzz import fuzz
+
+def normalize_availability(value: str) -> str:
+    """Normalizes availability text to a standard boolean-like state using synonym mapping."""
+    val = value.lower()
+    in_stock_synonyms = ['instock', 'in stock', 'available', 'available now', 'in-stock']
+    out_of_stock_synonyms = ['outofstock', 'out of stock', 'unavailable', 'sold out']
+    
+    if any(syn in val for syn in in_stock_synonyms):
+        return 'in_stock'
+    if any(syn in val for syn in out_of_stock_synonyms):
+        return 'out_of_stock'
+    return val
+
+def is_fact_matched(r_fact: StructuredFact, raw_facts: List[StructuredFact]) -> bool:
+    """Checks if a rendered fact has a matching equivalent in the raw facts."""
+    for f in raw_facts:
+        if f.fact_type != r_fact.fact_type:
+            continue
+            
+        # Price: numerical equality check (handles formatting like $49.00 vs 49.0)
+        if r_fact.fact_type == 'price':
+            try:
+                if float(r_fact.value) == float(f.value):
+                    return True
+            except ValueError:
+                pass
+                
+        # Availability: synonym matching
+        elif r_fact.fact_type == 'availability':
+            if normalize_availability(r_fact.value) == normalize_availability(f.value):
+                return True
+                
+        # Text fields (titles, names): Fuzzy string matching
+        else:
+            # Use token_set_ratio which ignores word order and handles partial matches well
+            similarity = fuzz.token_set_ratio(r_fact.value.lower(), f.value.lower())
+            if similarity > 85:  # 85% similarity threshold
+                return True
+                
+    return False
+
 def check_js_rendering_gap(raw_html: str, rendered_html: str, raw_facts: List[StructuredFact], url: str) -> List[CandidateFinding]:
     """ E-01: JS Rendering Gap 
     When core page-role facts appear after render but have no raw/noscript equivalent.
@@ -103,9 +145,9 @@ def check_js_rendering_gap(raw_html: str, rendered_html: str, raw_facts: List[St
     findings = []
     
     for r_fact in rendered_facts:
-        if r_fact.fact_type in ['price', 'article_title']:
-            # Check if this fact is missing in raw facts
-            if not any(f.value == r_fact.value for f in raw_facts if f.fact_type == r_fact.fact_type):
+        if r_fact.fact_type in ['price', 'article_title', 'availability']:
+            # Check if this fact is missing in raw facts using fuzzy/semantic logic
+            if not is_fact_matched(r_fact, raw_facts):
                 findings.append(CandidateFinding(
                     detector_id="E-01",
                     mechanism="rendering gap",
