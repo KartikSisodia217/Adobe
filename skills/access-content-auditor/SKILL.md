@@ -9,15 +9,33 @@ compatibility: Requires safe HTTP GET access and optional sandboxed browser snap
 ## When to use
 Use during a public AI-discoverability audit to check if pages can be crawled and if important content is trapped in JavaScript or missing structured data.
 
-## Inputs
-`AuditContext` containing `RawPage` and `RenderedPage` snapshots.
+## Detection Rules & Reasoning
 
-## Procedure
-1. Parse robots policy.
-2. Parse raw HTTP responses for facts and canonicals.
-3. Extract JSON-LD and meta tags.
-4. Compare raw text equivalents against rendered important facts.
-5. Return candidate findings and structured facts to the orchestrator.
+### D-01: Retrieval Access Restriction
+*   **Detection Conditions:** Check if `robots.txt` explicitly disallows AI agents (e.g. `OAI-SearchBot`, `GPTBot`, `ClaudeBot`).
+*   **Evidence Requirements:** Must record the exact bot name and the blocked path.
+*   **False-Positive Exclusions:** Do not flag generic `User-Agent: *` blocks as AI-specific unless accompanied by AI bot names.
+*   **Severity Criteria:** Critical if blocking entire site (`/`); Medium if blocking specific subdirectories.
 
-## Output
-Candidate findings for D-01, D-02, E-01, E-02.
+### D-02: Entity-Aware Schema Contradiction
+*   **Detection Conditions:** Check if JSON-LD declares prices/facts that don't exist visibly under the same context.
+*   **Evidence Requirements:** Must extract currency, billing period, and offer type before declaring a contradiction.
+*   **False-Positive Exclusions:** `$49/month` visible and `$499/year` visible vs `499` in JSON-LD is NOT a contradiction if the billing periods differ. Match on entity properties.
+*   **Severity Criteria:** Medium (impacts disambiguation but site remains crawlable).
+
+### E-01: JS Rendering Gap
+*   **Detection Conditions:** Core facts (pricing, titles, availability) appear in hydration but are missing in raw HTML.
+*   **Evidence Requirements:** Must prove fact is material to the inferred page role (e.g. price on a product detail page).
+*   **False-Positive Exclusions:** Do NOT report a gap merely because a fact appears after hydration. Report only if no equivalent exists in raw HTML/JSON-LD and the rendered fact is extractable with high confidence using semantic/fuzzy matching (85%+ similarity threshold).
+*   **Severity Criteria:** High (prevents static AI indexers from extracting essential data).
+
+### E-02: Non-Text Trap
+*   **Detection Conditions:** Material factual information (pricing charts, infographics) exists only in non-textual form without a machine-readable equivalent.
+*   **Evidence Requirements:** Must prove the image contains data or stats (via semantic class/source attributes) and lacks alt text or structured data equivalents.
+*   **False-Positive Exclusions:** Do NOT report decorative or generic product images missing alt text; this is not generic accessibility auditing.
+*   **Severity Criteria:** Medium (impacts multimodal extractability).
+
+### Action Selection & Remediation
+*   For D-01: Suggest: "If AI discoverability is a goal, review whether public content should be accessible to it."
+*   For E-01: Recommend Server-Side Rendering (SSR) or Static Site Generation (SSG) for core data.
+*   For D-02: Recommend JSON-LD synchronization with visual data.

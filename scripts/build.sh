@@ -20,7 +20,7 @@ zip -rq aimless-marketplace.zip \
     scripts/validate_marketplace.py \
     -x "*__pycache__*" "*.pyc" "*.DS_Store" "*/.DS_Store" "*.pdf" "venv/*" ".git/*"
 
-SIZE=$(stat -f %z aimless-marketplace.zip 2>/dev/null || stat -c %s aimless-marketplace.zip)
+SIZE=$(wc -c < aimless-marketplace.zip | tr -d ' ')
 echo "Package size: $SIZE bytes"
 
 MAX_SIZE=52428800 # 50 MB

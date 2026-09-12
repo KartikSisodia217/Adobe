@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <h1>Trap</h1>
+  <a href="/target" role="link">Primary Link</a>
+  <div role="dialog" style="position:fixed;top:0;left:0;width:100%;height:100%;background:red;z-index:9999;">
+    <h2>You are trapped</h2>
+    <button id="closeBtn">Close</button>
+  </div>
+  <script>
+  var btn = document.getElementById('closeBtn');
+  btn.addEventListener('click', function(e) {
+     e.preventDefault(); // fails to close
+  });
+  window.addEventListener('keydown', function(e) {
+     if(e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+     }
+     if(e.key === 'Tab') {
+        e.preventDefault();
+        btn.focus();
+     }
+  });
+  </script>
+</body>
+</html>

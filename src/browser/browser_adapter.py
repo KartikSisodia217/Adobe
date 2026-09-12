@@ -22,6 +22,9 @@ class BrowserAdapter:
     async def get_url(self) -> str:
         return await self._send("get_url")
 
+    async def is_destination_healthy(self) -> bool:
+        return await self._send("is_destination_healthy")
+
     async def press(self, key: str) -> None:
         await self._send("press", key=key)
 
@@ -78,6 +81,13 @@ def create_adapter(page, accessibility_tree: Dict[str, Any]) -> BrowserAdapter:
                         const isBodyInert = document.body.inert;
                         const isBodyHidden = window.getComputedStyle(document.body).overflow === 'hidden';
                         return hasModal || isBodyInert || isBodyHidden;
+                    }''')
+                    fut.set_result(res)
+                elif action == "is_destination_healthy":
+                    res = await page.evaluate('''() => {
+                        const text = document.body.innerText.toLowerCase();
+                        if (text.includes("404 not found") || text.includes("page not found") || text.includes("file not found") || text.includes("error code: 404")) return false;
+                        return document.querySelectorAll('h1, main, article').length > 0;
                     }''')
                     fut.set_result(res)
                 elif action == "bounded_focus_trace":

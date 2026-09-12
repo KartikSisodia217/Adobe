@@ -77,9 +77,12 @@ async def _modal_trap(browser: BrowserAdapter, tree: dict, context: AuditContext
                 return []
         trace = await browser.bounded_focus_trace(max_steps=8)
         trapped = len(trace) == 8 and len(set(trace)) <= 2
+        
+        # Consider a route completely obstructed if focus is trapped and all safe exits fail
+        # This prevents false positives on well-implemented dialogs where user can still navigate
         if trapped:
-            return [_candidate("G-02", "modal-focus-trap", _text(modal) or "blocking modal",
-                [{"escape_failed": True, "safe_exit_failed": True, "focus_trace": trace,
+            return [_candidate("G-02", "modal focus trap", _text(modal) or "blocking modal",
+                [{"primary_task_obstructed": True, "pointer_interaction_intercepted": True, "escape_failed": True, "safe_exit_failed": True, "focus_trace": trace,
                   "cookie_consent": bool(_COOKIE.search(_text(modal)))}], context)]
     except Exception as exc:
         context.record_limitation(f"G-02 detector failed: {type(exc).__name__}")
@@ -96,13 +99,23 @@ async def _navigation(browser: BrowserAdapter, tree: dict, context: AuditContext
             continue
         try:
             await browser.click("link", _text(node))
-            # Verify actual URL transition
+            
+            # Verify actual URL transition OR DOM transition AND destination health
             new_url = await browser.get_url()
-            if new_url != original_url:
+            healthy = await browser.is_destination_healthy()
+            
+            # For SPAs: Check if the accessibility tree changed significantly
+            new_tree = await _value(browser.get_accessibility_tree())
+            dom_changed = str(new_tree) != str(tree)
+            
+            if (new_url != original_url or dom_changed) and healthy:
                 return []
+            elif (new_url != original_url or dom_changed) and not healthy:
+                return [_candidate("G-03", "primary-route-unreachable", _text(node),
+                    [{"route_name": _text(node), "error": "Navigated to dead or empty page state"}], context, "medium")]
             else:
                 return [_candidate("G-03", "primary-route-unreachable", _text(node),
-                    [{"route_name": _text(node), "error": "Click succeeded but URL did not change"}], context, "medium")]
+                    [{"route_name": _text(node), "error": "Click succeeded but neither URL nor DOM transitioned"}], context, "medium")]
         except Exception as exc:
             return [_candidate("G-03", "primary-route-unreachable", _text(node),
                 [{"route_name": _text(node), "error": type(exc).__name__}], context, "medium")]

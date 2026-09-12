@@ -6,7 +6,7 @@ def generate_narrative(summary: Summary, findings: List[FinalFinding], context: 
     if summary.total_findings == 0:
         if context.budgets_consumed.get("pages_rendered", 0) == 0:
             return "No issues were detected within the observed coverage; however, browser rendering failed for all pages, so engagement and JS-rendering findings are completely unavailable."
-        return "Excellent! The website appears highly optimized for AI discoverability and on-site engagement. No critical visibility traps or accessibility barriers were detected during the audit."
+        return "No high-confidence issues were detected within the sampled coverage."
     
     parts = []
     if summary.critical > 0:
@@ -20,13 +20,16 @@ def generate_narrative(summary: Summary, findings: List[FinalFinding], context: 
     
     return " ".join(parts)
 
-def build_report(context: AuditContext, findings: List[FinalFinding], proactive: List[ProactiveSuggestion]) -> AuditReport:
+def build_report(context: AuditContext, findings: List[FinalFinding], proactive: List[ProactiveSuggestion], cap_stats: dict) -> AuditReport:
     counts = {"critical": 0, "high": 0, "medium": 0, "low": 0}
     for f in findings:
         if f.severity in counts:
             counts[f.severity] += 1
             
     summary = Summary(
+        total_detected=cap_stats.get("total_detected", len(findings)),
+        reported_top_findings=len(findings),
+        suppressed_findings=cap_stats.get("suppressed", 0),
         total_findings=len(findings),
         critical=counts["critical"],
         high=counts["high"],

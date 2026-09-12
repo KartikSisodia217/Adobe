@@ -148,7 +148,7 @@ class RawFetcher:
         html_content = ""
         declared_encoding = response.charset
         
-        if 'text/html' in content_type or 'application/xhtml+xml' in content_type:
+        if 'text/html' in content_type or 'application/xhtml+xml' in content_type or 'text/plain' in content_type or 'xml' in content_type:
             if not declared_encoding:
                 det = chardet.detect(decompressed)
                 declared_encoding = det['encoding'] if det['encoding'] else 'utf-8'

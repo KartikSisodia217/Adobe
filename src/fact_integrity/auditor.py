@@ -58,19 +58,41 @@ def _expired_claims(facts: Iterable[StructuredFact], today: date) -> list[Candid
     return findings
 
 
+def build_fact_identity(fact: StructuredFact) -> tuple:
+    """Builds a normalized identity to ensure we only compare related facts."""
+    # Scope to entity name if known, otherwise scope to the specific page URL
+    # to prevent falsely comparing different unknown products across the site.
+    scope = fact.entity.casefold() if fact.entity and fact.entity != "Unknown" else str(fact.page_url)
+    
+    return (
+        scope,
+        fact.fact_type,
+        fact.currency.casefold() if fact.currency else "unknown",
+        fact.billing_period.casefold() if fact.billing_period else "unknown",
+        fact.offer_type.casefold() if fact.offer_type else "unknown"
+    )
+
 def _contradictions(facts: Iterable[StructuredFact]) -> list[CandidateFinding]:
-    groups: dict[str, list[StructuredFact]] = defaultdict(list)
+    groups: dict[tuple, list[StructuredFact]] = defaultdict(list)
     for fact in facts:
-        groups[fact.fact_type].append(fact)
+        identity = build_fact_identity(fact)
+        groups[identity].append(fact)
+        
     findings = []
-    for fact_type, group in groups.items():
+    for identity, group in groups.items():
+        fact_type = identity[1]
+        if fact_type not in {"price", "availability", "organization_name", "contact"}:
+            continue
+            
         values = defaultdict(list)
         for fact in group:
             values[_normalise(fact.value, fact_type)].append(fact)
-        if len(values) < 2 or fact_type not in {"price", "availability", "organization_name", "contact"}:
+            
+        if len(values) < 2:
             continue
+            
         evidence = [
-            {"fact_type": fact_type, "value": fact.value, "source": fact.source, "page_url": str(fact.page_url)}
+            {"fact_type": fact_type, "value": fact.value, "source": fact.source, "page_url": str(fact.page_url), "identity": identity}
             for members in values.values() for fact in members
         ]
         urls = list(dict.fromkeys(fact.page_url for members in values.values() for fact in members))
