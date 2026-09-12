@@ -1,88 +1,154 @@
-# AIMLESS Brand AI-Readiness Auditor
+# AIMLESS: AI-Readiness Auditor
 
-An autonomous, multi-agent auditing system designed to evaluate any website's "AI Discoverability" and "On-Site Engagement". Built for the Adobe Hackathon Round 3, this tool helps brands understand why they are invisible to AI assistants (like ChatGPT or Perplexity) and why visitors bounce when they arrive.
+An autonomous, multi-agent auditing system designed to evaluate any website's **"AI Discoverability"** and **"On-Site Engagement"**. Built for the Adobe Hackathon Round 3, this tool helps brands understand why they are invisible to AI assistants (like ChatGPT, Claude, or Perplexity) and why visitors or automated agents bounce when they arrive on site.
 
-## 🚀 What it does
+---
 
-The AIMLESS auditor runs a non-destructive, read-only analysis of a target website. It generates a standardized JSON report highlighting exactly what needs to be fixed.
+## 🏛 Architecture
 
-It detects critical AI-visibility traps, including:
-* **Robots.txt Blocking:** Are you explicitly blocking AI retrieval bots?
-* **JS Rendering Gaps:** Are your core product facts (prices, availability) trapped in client-side JavaScript, making them invisible to simple crawlers?
-* **Schema Contradictions:** Does your visible text contradict your hidden `JSON-LD` structured data?
-* **Accessibility & Modal Traps:** Are there aggressive cookie banners or inaccessible navigation routes that prevent automated agents from completing tasks?
-* **Fact Expiration & Ambiguity:** Are your claims outdated, or is your brand identity easily confused with competitors by AIs?
+The project operates as an **Agent Skill Marketplace**, orchestrated by a central Fusion Engine. We enforce strict separation of concerns, executing audits concurrently without violating safety guardrails (SSRF protection, 180s hard timeout limits).
 
-## 🧠 System Architecture
+```mermaid
+graph TD
+    User([User Payload Input]) --> CLI[Orchestrator CLI]
+    
+    subgraph M1 [Orchestrator (M1)]
+        CLI --> SecurityGuard[SSRF / DNS Guard]
+        SecurityGuard --> BrowserHost[Playwright Browser Host]
+        SecurityGuard --> Fetcher[Raw HTML Fetcher]
+        SecurityGuard --> Discovery[URL Discovery & Sampling]
+    end
 
-The project is built as an **Agent Skill Marketplace** composed of three highly decoupled modules, orchestrated by a central engine:
+    subgraph M2 [Access Content (M2)]
+        Fetcher --> Robots[Robots.txt Evaluator]
+        Fetcher --> Extractor[JSON-LD & Fact Extractor]
+    end
 
-1. **Audit Orchestrator (Entrypoint):** Manages the execution lifecycle, Playwright browser host, security gates (SSRF/DNS validation), timeout budgets (180s target), and the final Fusion engine that deduplicates and scores findings.
-2. **Access-Content Auditor:** Responsible for HTTP-level retrieval parsing, `JSON-LD` structured data extraction (using robust fuzzy semantic matching), and raw vs. rendered fact comparison.
-3. **Fact-Integrity & Engagement Auditor:** Responsible for bounded interaction tests. Uses the accessibility tree to detect focus traps, essential unnamed controls, and performs first-party factual consistency checks (including Wikidata disambiguation).
+    subgraph M3 [Engagement & Integrity (M3)]
+        BrowserHost --> A11yTree[Accessibility Tree Walker]
+        BrowserHost --> FocusTrap[Modal Trap Tester]
+        Extractor --> FactCheck[Fact Integrity & Contradiction Engine]
+    end
 
-## 🛠️ Installation
+    M2 --> Fusion[Fusion Engine]
+    M3 --> Fusion
 
-Ensure you have Python 3.10+ installed.
+    subgraph Fusion & Reporting
+        Fusion --> Dedupe[Deduplication]
+        Dedupe --> Cap[Capping & Scoring]
+        Cap --> Report[JSON Report Generator]
+    end
 
+    Report --> FinalJSON([Adobe Compliant JSON Output])
+```
+
+---
+
+## 📁 Folder Structure
+
+```text
+Adobe/
+├── .github/workflows/       # CI/CD pipeline (Continuous Integration)
+├── docs/                    # Field research trails and architecture references
+│   └── field_research.md    # Real-world site studies (Tesla, Amazon, GDPR sites)
+├── skills/                  # Core entrypoint execution scripts
+│   └── audit-orchestrator/
+│       └── scripts/
+│           └── orchestrate.py  # Main CLI entrypoint
+├── src/
+│   ├── access_content/      # M2: Robots checking, Schema.org parsing, Fuzzy semantic extraction
+│   ├── browser/             # Playwright network interceptors and stealth evasions
+│   ├── engagement/          # M3: Modal/accessibility testing, Interactive flow auditing
+│   ├── fact_integrity/      # M3: Date/Price mismatching, Wikidata disambiguation
+│   ├── fetching/            # HTTP connection management and raw payload fetches
+│   ├── fusion/              # Signal aggregation, severity scoring, and capping
+│   ├── orchestration/       # Bootstrapping, Context building, and logger mechanisms
+│   ├── reporting/           # Generates final Adobe-compliant JSON reports and narrative summaries
+│   ├── robots/              # Robots.txt retrieving
+│   ├── sampling/            # Page discovery and BFS crawling (limited depth)
+│   ├── schemas/             # Pydantic v1 strictly-typed models
+│   └── security/            # Protections against SSRF and arbitrary redirect logic
+├── tests/
+│   ├── fixtures/            # Mock HTML files and wild-site tests
+│   ├── integration/         # Integration tests ensuring end-to-end functionality
+│   ├── security/            # Tests enforcing SSRF/DNS safety bounds
+│   └── unit/                # Component-level testing
+├── requirements.txt         # Production dependencies
+└── README.md                # You are here
+```
+
+---
+
+## 🚀 Setup & Commands
+
+### Prerequisites
+Ensure you have Python 3.10+ installed on your system.
+
+### 1. Installation
 ```bash
 # Clone the repository
 git clone https://github.com/KartikSisodia217/Adobe.git
 cd Adobe
 
-# Install Python dependencies
+# Install Python dependencies (including CI-compatible stealth)
 pip install -r requirements.txt
 
-# Install Playwright browsers (Required for the Engagement Auditor)
-playwright install chromium
+# Install Playwright and Linux OS dependencies for Chromium
+playwright install --with-deps chromium
 ```
 
-## 💻 Usage
-
-The system is designed to be invoked via a single JSON object passed via standard input (stdin).
+### 2. Running an Audit
+The system is designed to be invoked via a single JSON object passed via standard input (`stdin`). This guarantees stateless container execution.
 
 ```bash
-# Set PYTHONPATH to the project root
+# Linux / macOS
 export PYTHONPATH="."
+echo '{"input_url": "https://example.com"}' | python skills/audit-orchestrator/scripts/orchestrate.py
 
-# Run the audit against a target URL
+# Windows (PowerShell)
+$env:PYTHONPATH="."
 echo '{"input_url": "https://example.com"}' | python skills/audit-orchestrator/scripts/orchestrate.py
 ```
 
-### Example Output
-The system outputs a deterministic, Adobe-compliant JSON report containing a severity-scored summary and actionable findings:
-
-```json
-{
-  "site": "https://example.com/",
-  "audited_at": "2026-09-12T06:07:36Z",
-  "audit_version": "1.0.0",
-  "summary": {
-    "total_findings": 1,
-    "critical": 0,
-    "high": 1,
-    "medium": 0,
-    "low": 0
-  },
-  "findings": [
-    {
-      "id": "F-001",
-      "title": "Rendering gap",
-      "severity": "high",
-      "evidence": "Found 1 issues relating to rendering gap.",
-      "suggested_action": {
-        "summary": "Address rendering gap on core facts",
-        "priority": "high"
-      }
-    }
-  ]
-}
+### 3. Running the Test Suite
+We utilize `pytest` to ensure 100% functionality and security compliance.
+```bash
+PYTHONPATH="." python -m pytest tests/
 ```
 
-## 🛡️ Guardrails & Security
-* **Non-Destructive:** The auditor will never mutate data, submit forms, or bypass authentication.
-* **Bounded Execution:** Hard timeouts (180s target, 270s hard kill) ensure the system never hangs.
-* **SSRF Protection:** Explicitly rejects auditing `localhost`, private IP ranges, and `file://` protocols.
+---
+
+## 🔍 Modules & Core Capabilities
+
+1. **Bot & Crawlability Evasion (Stealth Mode)**
+   * Built on `playwright-stealth` to bypass basic WAF and Bot Management systems.
+   * Modifies `navigator.userAgent` and suppresses `AutomationControlled` flags.
+2. **Generative Remediation Narratives**
+   * Deterministically generates executive summaries ("Narratives") without relying on external LLM APIs (Strict hackathon compliance).
+   * Dynamically embeds literal visual code snippets (e.g., `<script type="application/ld+json">`) directly into the Adobe-compliant JSON output to aid developers in fixing errors.
+3. **Fuzzy Semantic Extractor**
+   * Instead of brittle Regex, relies on `thefuzz` and `python-Levenshtein` to semantically map unstructured DOM facts to structured `JSON-LD` facts (e.g. mapping `"$39,990"` directly to `"39990.00"`).
+4. **Active Focus Trap Breaker**
+   * Dynamically injects keystrokes (`Escape`) and utilizes visual tree traversal to test if modals, cookie walls, or popups completely disable the accessibility tree for automated systems.
+
+---
+
+## 📚 Field Research & References
+
+Our heuristic detectors are not theoretically derived; they are mapped directly to live architectural faults observed in the wild. Please see `docs/field_research.md` for specific case studies.
+
+**Core Principles Derived From:**
+1. *Google Search Central: SEO for AI & Structured Data Guidelines (2024)*
+2. *W3C Web Content Accessibility Guidelines (WCAG) 2.2 - Focus Management*
+3. *"The JS Rendering Gap" - How Client-Side Rendering Obfuscates Core Commercial Facts (Modern React/Next.js Architecture Patterns).*
+4. *Schema.org Ontology completeness requirements for rich snippets.*
+
+---
+
+## 🛡 Guardrails & Security constraints
+* **Non-Destructive:** The auditor explicitly blocks form submission (`POST`/`PUT`) and disables arbitrary file downloading.
+* **Bounded Execution:** Strict 180-second timeout budget per run, monitored globally by the Orchestrator.
+* **SSRF Protection:** Resolves and rejects private CIDR blocks, localhost traversal, and `file://` local read attacks.
 
 ## 📄 License
-MIT License
+MIT License. Created for the Adobe Hackathon.
