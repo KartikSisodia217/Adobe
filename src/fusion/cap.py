@@ -61,7 +61,25 @@ def cap_findings(scored: List[dict]) -> Tuple[List[FinalFinding], List[Proactive
             include = False
             
         if include and len(final_findings) < 8:
-            evidence_str = f"Found {len(f.evidence_items)} issues relating to {f.mechanism}."
+            # Generate a rich, context-aware evidence string
+            evidence_details = []
+            for item in f.evidence_items[:3]: # show up to 3 context clues
+                if "bot" in item:
+                    evidence_details.append(f"Bot '{item['bot']}' is explicitly disallowed.")
+                elif "missing_fact" in item:
+                    evidence_details.append(f"Fact '{item['missing_fact']}' is missing in raw HTML.")
+                elif "route_name" in item:
+                    evidence_details.append(f"Route '{item['route_name']}' is inaccessible via standard navigation.")
+                elif "escape_failed" in item:
+                    evidence_details.append("Modal overlay could not be dismissed safely.")
+                elif "value" in item and "fact_type" in item:
+                    evidence_details.append(f"Conflicting value '{item['value']}' found for {item['fact_type']}.")
+            
+            if evidence_details:
+                evidence_str = f"Detector flagged {f.mechanism}: " + " ".join(evidence_details)
+            else:
+                evidence_str = f"Detector flagged {f.mechanism} on {f.affected_entity}."
+                
             if len(evidence_str) > 500:
                 evidence_str = evidence_str[:497] + "..."
                 
@@ -70,6 +88,10 @@ def cap_findings(scored: List[dict]) -> Tuple[List[FinalFinding], List[Proactive
                 title=f"{f.mechanism.capitalize()}",
                 severity=sev,
                 evidence=evidence_str,
+                evidence_items=f.evidence_items,
+                affected_urls=f.page_urls,
+                category=f.category,
+                confidence=f.confidence,
                 suggested_action=get_suggested_action(f)
             )
             final_findings.append(ff)

@@ -89,12 +89,12 @@ def extract_facts_from_html(html_content: str, url: str, source: FactSource) -> 
             # We'll just call it article_title for simplicity if not product.
             facts.append(StructuredFact(fact_type="article_title", value=title, source=source, page_url=HttpUrl(url)))
             
-    # Extract prices
+    # Extract prices (supporting multiple international currencies and comma decimals)
     text = extract_html_text(html_content)
-    price_matches = re.findall(r'\$\s?(\d+(?:\.\d{2})?)', text)
+    price_matches = re.findall(r'(?:[\$\€\£\¥\₹]|usd\s?|eur\s?|gbp\s?|jpy\s?|inr\s?)\s?(\d+(?:[.,]\d{1,2})?)', text, re.IGNORECASE)
     for match in price_matches:
         try:
-            val = str(float(match))
+            val = str(float(match.replace(',', '.')))
             facts.append(StructuredFact(fact_type="price", value=val, source=source, page_url=HttpUrl(url)))
         except ValueError:
             pass
