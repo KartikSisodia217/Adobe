@@ -1,7 +1,6 @@
 import asyncio
 from typing import List, Dict
 from playwright.async_api import async_playwright, Browser, BrowserContext, Page, Error as PlaywrightError
-from playwright_stealth import stealth_async
 from src.schemas.v1 import RenderedPage, RawPage, PageRole
 from src.orchestration.errors import RecoverableError
 from src.browser.network_policy import NetworkPolicy
@@ -50,7 +49,8 @@ class BrowserHost:
         try:
             page = await self.context.new_page()
             # Apply stealth plugin to evade bot detection
-            await stealth_async(page)
+            from playwright_stealth import Stealth
+            await Stealth().apply_stealth_async(page)
             
             # Block downloads
             page.on("download", lambda download: asyncio.create_task(download.cancel()))
