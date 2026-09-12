@@ -39,8 +39,9 @@ def parse_json_ld_facts(html_content: str, url: str) -> Tuple[List[StructuredFac
                     page_urls=[HttpUrl(url)]
                 ))
                 
+            product_name = str(item.get('name', 'Unknown'))
             if 'name' in item:
-                facts.append(StructuredFact(fact_type="product_name", value=str(item['name']), source="json_ld", page_url=HttpUrl(url)))
+                facts.append(StructuredFact(fact_type="product_name", value=product_name, source="json_ld", page_url=HttpUrl(url)))
             if 'offers' in item:
                 offers = item['offers']
                 if isinstance(offers, dict):
@@ -53,7 +54,8 @@ def parse_json_ld_facts(html_content: str, url: str) -> Tuple[List[StructuredFac
                                 value=val, 
                                 source="json_ld", 
                                 page_url=HttpUrl(url),
-                                currency=currency
+                                currency=currency,
+                                entity=product_name
                             ))
                         except ValueError:
                             pass
@@ -91,7 +93,7 @@ def extract_html_text(html_content: str) -> str:
     soup = BeautifulSoup(html_content, 'lxml')
     
     # HTML Noise Filter: ignore non-content blocks
-    for tag in soup(['nav', 'aside', 'script', 'style', 'noscript', 'header']):
+    for tag in soup(['nav', 'aside', 'script', 'style', 'header']):
         tag.decompose()
         
     texts = []
@@ -128,6 +130,8 @@ def extract_facts_from_html(html_content: str, url: str, source: FactSource) -> 
     price_pattern = r'(\$|€|£|¥|₹|usd\s?|eur\s?|gbp\s?|jpy\s?|inr\s?)\s?(\d+(?:[.,]\d{1,2})?)(?:\s*(/month|/year|per month|per year|billed annually|billed monthly))?'
     price_matches = re.finditer(price_pattern, text, re.IGNORECASE)
     
+    h1_text = h1s[0].get_text(strip=True) if h1s else "Unknown"
+    
     for match in price_matches:
         try:
             currency_raw = match.group(1).strip().lower()
@@ -151,7 +155,8 @@ def extract_facts_from_html(html_content: str, url: str, source: FactSource) -> 
                 source=source, 
                 page_url=HttpUrl(url),
                 currency=currency,
-                billing_period=period
+                billing_period=period,
+                entity=h1_text
             ))
         except ValueError:
             pass
@@ -164,31 +169,32 @@ def check_schema_contradiction(raw_facts: List[StructuredFact], url: str) -> Lis
     prices = [f for f in raw_facts if f.fact_type == 'price']
     
     # Compare raw_html prices vs json_ld prices using entity attributes
-    raw_entities = set([(f.value, f.currency, f.billing_period) for f in prices if f.source in ['raw_html', 'noscript']])
-    json_ld_entities = set([(f.value, f.currency, f.billing_period) for f in prices if f.source == 'json_ld'])
+    raw_entities = set([(f.entity, f.value, f.currency, f.billing_period) for f in prices if f.source in ['raw_html', 'noscript']])
+    json_ld_entities = set([(f.entity, f.value, f.currency, f.billing_period) for f in prices if f.source == 'json_ld'])
     
     if raw_entities and json_ld_entities:
         unsupported_json_ld = []
-        for j_val, j_curr, j_per in json_ld_entities:
+        for j_ent, j_val, j_curr, j_per in json_ld_entities:
             # We only claim a contradiction if the JSON-LD price explicitly conflicts 
-            # with a visible price of the same currency and billing period.
+            # with a visible price of the same entity, currency, and billing period.
             has_matching_context = False
             has_exact_match = False
             
-            for r_val, r_curr, r_per in raw_entities:
+            for r_ent, r_val, r_curr, r_per in raw_entities:
+                ent_match = (j_ent.lower() == r_ent.lower()) or (j_ent.lower() == 'unknown') or (r_ent.lower() == 'unknown')
                 curr_match = (j_curr.lower() == r_curr.lower()) or (j_curr.lower() == 'unknown') or (r_curr.lower() == 'unknown')
                 per_match = (j_per.lower() == r_per.lower()) or (j_per.lower() == 'unknown') or (r_per.lower() == 'unknown')
                 
-                if curr_match and per_match:
+                if ent_match and curr_match and per_match:
                     has_matching_context = True
                     if r_val == j_val:
                         has_exact_match = True
                         
-            # It's only a true contradiction if we found a visible price with the same context (e.g. Monthly USD)
-            # but the numerical value was different. If it's a completely different billing period or currency,
-            # it's just an alternative variant, not a contradiction.
+            # It's only a true contradiction if we found a visible price with the same context
+            # but the numerical value was different. If it's a completely different product,
+            # billing period or currency, it's just an alternative variant, not a contradiction.
             if has_matching_context and not has_exact_match:
-                unsupported_json_ld.append((j_val, j_curr, j_per))
+                unsupported_json_ld.append((j_ent, j_val, j_curr, j_per))
                 
         if unsupported_json_ld and len(unsupported_json_ld) == len(json_ld_entities):
             findings.append(CandidateFinding(
@@ -197,8 +203,8 @@ def check_schema_contradiction(raw_facts: List[StructuredFact], url: str) -> Lis
                 confidence="high",
                 affected_entity="Structured Data",
                 evidence_items=[{
-                    "visible_price_entities": [{"value": v, "currency": c, "period": p} for v, c, p in raw_entities],
-                    "json_ld_price_entities": [{"value": v, "currency": c, "period": p} for v, c, p in json_ld_entities]
+                    "visible_price_entities": [{"entity": e, "value": v, "currency": c, "period": p} for e, v, c, p in raw_entities],
+                    "json_ld_price_entities": [{"entity": e, "value": v, "currency": c, "period": p} for e, v, c, p in json_ld_entities]
                 }],
                 category="discoverability",
                 page_urls=[HttpUrl(url)]

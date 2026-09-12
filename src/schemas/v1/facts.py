@@ -11,6 +11,6 @@ class StructuredFact(BaseModel):
     page_url: HttpUrl
     entity: str = "Unknown"
     currency: str = "Unknown"
-    billing_period: str = "Unknown" # e.g. monthly, yearly, one-time
+    billing_period: str = "one-time" # e.g. monthly, yearly, one-time
     offer_type: str = "Unknown" # e.g. MSRP, Sale, Standard
     metadata: dict = {}
