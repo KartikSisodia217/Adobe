@@ -22,7 +22,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest pytest-asyncio
-        playwright install chromium
+        playwright install --with-deps chromium
         
     - name: Run test suite
       run: |
@@ -40,7 +40,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r requirements.txt
-        playwright install chromium
+        playwright install --with-deps chromium
     - name: Run E2E on Example.com
       run: |
         PYTHONPATH="." echo '{"input_url": "https://example.com"}' | python skills/audit-orchestrator/scripts/orchestrate.py
