@@ -11,7 +11,8 @@ class BrowserAdapter:
                  computed_name_fn: Callable[[str], Awaitable[Optional[str]]],
                  trace_fn: Callable[[int], Awaitable[List[str]]],
                  route_blocked_fn: Callable[[], Awaitable[bool]],
-                 get_url_fn: Callable[[], Awaitable[str]]):
+                 get_url_fn: Callable[[], Awaitable[str]],
+                 is_destination_healthy_fn: Callable[[], Awaitable[bool]] = None):
         self._accessibility_tree = accessibility_tree
         self._press_fn = press_fn
         self._click_fn = click_fn
@@ -19,12 +20,18 @@ class BrowserAdapter:
         self._trace_fn = trace_fn
         self._route_blocked_fn = route_blocked_fn
         self._get_url_fn = get_url_fn
+        self._is_destination_healthy_fn = is_destination_healthy_fn
 
     def get_accessibility_tree(self) -> Dict[str, Any]:
         return self._accessibility_tree
 
     async def get_url(self) -> str:
         return await self._get_url_fn()
+        
+    async def is_destination_healthy(self) -> bool:
+        if self._is_destination_healthy_fn:
+            return await self._is_destination_healthy_fn()
+        return True
 
     async def press(self, key: str) -> None:
         await self._press_fn(key)
@@ -69,6 +76,14 @@ def create_adapter(page, accessibility_tree: Dict[str, Any]) -> BrowserAdapter:
             return hasModal || isBodyInert || isBodyHidden;
         }''')
         
+    async def is_destination_healthy_fn() -> bool:
+        # Check if the page didn't error out (no 404 in title, and main content exists)
+        return await page.evaluate('''() => {
+            const text = document.body.innerText.toLowerCase();
+            if (text.includes("404 not found") || text.includes("page not found")) return false;
+            return document.querySelectorAll('h1, main, article').length > 0;
+        }''')
+        
     async def get_url_fn() -> str:
         return page.url
 
@@ -88,5 +103,6 @@ def create_adapter(page, accessibility_tree: Dict[str, Any]) -> BrowserAdapter:
         computed_name_fn=computed_name_fn,
         trace_fn=trace_fn,
         route_blocked_fn=route_blocked_fn,
-        get_url_fn=get_url_fn
+        get_url_fn=get_url_fn,
+        is_destination_healthy_fn=is_destination_healthy_fn
     )

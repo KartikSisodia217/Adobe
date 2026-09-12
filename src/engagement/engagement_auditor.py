@@ -91,10 +91,15 @@ async def _navigation(browser: BrowserAdapter, tree: dict, context: AuditContext
             continue
         try:
             await browser.click("link", _text(node))
-            # Verify actual URL transition
+            # Verify actual URL transition AND destination health
             new_url = await browser.get_url()
-            if new_url != original_url:
+            healthy = await browser.is_destination_healthy()
+            
+            if new_url != original_url and healthy:
                 return []
+            elif new_url != original_url and not healthy:
+                return [_candidate("G-03", "primary-route-unreachable", _text(node),
+                    [{"route_name": _text(node), "error": "Navigated to dead or empty page"}], context, "medium")]
             else:
                 return [_candidate("G-03", "primary-route-unreachable", _text(node),
                     [{"route_name": _text(node), "error": "Click succeeded but URL did not change"}], context, "medium")]
