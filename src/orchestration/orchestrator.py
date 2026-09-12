@@ -10,7 +10,7 @@ from src.security.ssrf_guard import resolve_and_validate
 from src.fetching.raw_fetcher import RawFetcher
 from src.robots.robots_gate import retrieve_robots_txt
 from src.sampling.discovery import discover_candidates
-from src.sampling.candidate_selection import select_candidates
+from src.sampling.candidate_selection import select_raw_candidates, select_render_candidates, refine_page_roles
 from src.browser.browser_host import BrowserHost
 from src.browser.browser_adapter import BrowserAdapter, create_adapter
 from src.schemas.v1 import RenderedPage, AuditReport, Summary, Coverage
@@ -59,7 +59,7 @@ async def execute_audit(input_url: str) -> dict:
             context.budgets_consumed["raw_pages_fetched"] += 1
             
             # 8-9. Candidate Selection
-            raw_cands, render_cands = select_candidates(homepage_raw, discovered, sitemaps)
+            raw_cands = select_raw_candidates(str(homepage_raw.url), discovered, sitemaps)
             
             # 10. Raw Fetch Rest
             tasks = []
@@ -75,6 +75,12 @@ async def execute_audit(input_url: str) -> dict:
                 else:
                     context.raw_pages.append(res)
                     context.budgets_consumed["raw_pages_fetched"] += 1
+                    
+            # 10.5 Refine roles
+            refine_page_roles(context.raw_pages)
+            
+            # 11. Render Candidates
+            render_cands = select_render_candidates(context.raw_pages)
         finally:
             await fetcher.close()
 
@@ -87,10 +93,10 @@ async def execute_audit(input_url: str) -> dict:
             for r_cand in render_cands:
                 render_data = None
                 try:
-                    render_data = await host.render_page(r_cand)
+                    render_data = await host.render_page(str(r_cand.url), r_cand.page_role)
                     
                     # Find matching raw page
-                    raw_matching = next((p for p in context.raw_pages if str(p.url) == r_cand["url"]), None)
+                    raw_matching = next((p for p in context.raw_pages if str(p.url) == str(r_cand.url)), None)
                     if raw_matching:
                         r_page = RenderedPage(
                             **raw_matching.model_dump(),
@@ -107,7 +113,7 @@ async def execute_audit(input_url: str) -> dict:
                             m3_eng_findings = await run_interactive_tests(adapter, context)
                             raw_findings.extend(m3_eng_findings)
                         except Exception as e:
-                            context.record_limitation(f"M3 engagement failed on {r_cand['url']}: {e}")
+                            context.record_limitation(f"M3 engagement failed on {str(r_cand.url)}: {e}")
                             
                 except RecoverableError as e:
                     context.record_limitation(str(e))
@@ -141,11 +147,13 @@ async def execute_audit(input_url: str) -> dict:
         deduped = deduplicate_findings(norm_findings)
         cross = cross_validate_findings(deduped, context)
         scored = assign_severity_and_confidence(cross)
-        final_findings, proactive = cap_findings(scored)
+        # 22. Proactive & Cap
+        final_findings, proactive, cap_stats = cap_findings(scored)
+        context.budgets_consumed["suppressed_findings"] = cap_stats["suppressed"]
 
         # 22-23. Report Generation
         context.budgets_consumed["runtime_ms"] = int((time.monotonic() - start_time) * 1000)
-        report = build_report(context, final_findings, proactive)
+        report = build_report(context, final_findings, proactive, cap_stats)
         
         logger.info("Audit complete", extra={"phase": "report_generation", "budget_consumption": context.budgets_consumed})
         return report.model_dump(mode='json')
