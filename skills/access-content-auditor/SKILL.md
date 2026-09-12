@@ -29,7 +29,13 @@ Use during a public AI-discoverability audit to check if pages can be crawled an
 *   **False-Positive Exclusions:** Do NOT report a gap merely because a fact appears after hydration. Report only if no equivalent exists in raw HTML/JSON-LD and the rendered fact is extractable with high confidence using semantic/fuzzy matching (85%+ similarity threshold).
 *   **Severity Criteria:** High (prevents static AI indexers from extracting essential data).
 
+### E-02: Non-Text Trap
+*   **Detection Conditions:** Material factual information (pricing charts, infographics) exists only in non-textual form without a machine-readable equivalent.
+*   **Evidence Requirements:** Must prove the image contains data or stats (via semantic class/source attributes) and lacks alt text or structured data equivalents.
+*   **False-Positive Exclusions:** Do NOT report decorative or generic product images missing alt text; this is not generic accessibility auditing.
+*   **Severity Criteria:** Medium (impacts multimodal extractability).
+
 ### Action Selection & Remediation
-*   For D-01: Suggest `Allow: /` in `robots.txt`.
+*   For D-01: Suggest: "If AI discoverability is a goal, review whether public content should be accessible to it."
 *   For E-01: Recommend Server-Side Rendering (SSR) or Static Site Generation (SSG) for core data.
 *   For D-02: Recommend JSON-LD synchronization with visual data.

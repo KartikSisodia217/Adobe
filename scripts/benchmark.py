@@ -57,6 +57,8 @@ async def run_benchmark():
             results.append({
                 "url": url,
                 "runtime_ms": report.get("coverage", {}).get("runtime_ms", 0),
+                "expected": expected,
+                "actual": actual,
                 "tp": tp,
                 "fp": fp,
                 "fn": fn
@@ -85,30 +87,41 @@ async def run_benchmark():
     print(f"Total Runtime: {total_time:.2f}s")
     print("-------------------------\n")
     
+    # Calculate Per-Detector F1
+    print("\n[Judge Requested Output - Per-Detector Performance]")
+    print("| Detector | TP | FP | FN | Precision | Recall | F1   |")
+    print("|----------|----|----|----|-----------|--------|------|")
+    
+    all_detectors = ["D-01", "D-02", "E-01", "E-02", "G-02", "G-03", "F-01", "F-02", "F-03", "P-01", "P-02"]
+    for det in all_detectors:
+        det_tp = sum(1 for r in results if det in r["expected"] and det in r["actual"])
+        det_fp = sum(1 for r in results if det not in r["expected"] and det in r["actual"])
+        det_fn = sum(1 for r in results if det in r["expected"] and det not in r["actual"])
+        
+        if det_tp == 0 and det_fp == 0 and det_fn == 0:
+            continue # Detector not tested in this benchmark
+            
+        det_prec = det_tp / (det_tp + det_fp) if (det_tp + det_fp) > 0 else 0.0
+        det_rec = det_tp / (det_tp + det_fn) if (det_tp + det_fn) > 0 else 0.0
+        det_f1 = 2 * (det_prec * det_rec) / (det_prec + det_rec) if (det_prec + det_rec) > 0 else 0.0
+        
+        print(f"| {det:8} | {det_tp:2} | {det_fp:2} | {det_fn:2} | {det_prec:9.2f} | {det_rec:6.2f} | {det_f1:4.2f} |")
+    
     print("\n--- Phase 2: Unseen-Site Robustness (Generalization) ---")
     public_sites = ["https://example.com/", "https://quotes.toscrape.com/", "https://books.toscrape.com/"]
+    print("Unseen-site evaluation: 3 sites audited")
+    print("No ground truth labels. Qualitative robustness observations only.")
     for site in public_sites:
         print(f"Evaluating unseen generalization on {site}...")
         try:
             r = await execute_audit(site)
-            # In a real evaluation, human auditors would grade these as true/false positives.
-            # For the hackathon report, we'll measure successful completion and structural coverage.
             findings_count = len(r.get("findings", []))
-            print(f"  -> Successfully generated report with {findings_count} findings.")
+            proactive_count = len(r.get("proactive_suggestions", []))
+            pages = r.get("coverage", {}).get("pages_sampled_raw", 0)
+            print(f"  -> Successfully audited {pages} pages, generated {findings_count} findings, {proactive_count} proactive suggestions.")
         except Exception as e:
             print(f"  -> Error: {e}")
             
-    print("\n[Judge Requested Output]")
-    print("| Detector | Fixture F1 | Unseen-site agreement |")
-    print("|----------|------------|-----------------------|")
-    print("| D-01     | 1.00       | 0.94                  |")
-    print("| D-02     | 1.00       | 0.89                  |")
-    print("| E-01     | 1.00       | 0.85                  |")
-    print("| E-02     | 1.00       | 0.81                  |")
-    print("| G-02     | 1.00       | 0.92                  |")
-    print("| G-03     | 1.00       | 0.87                  |")
-    print("| F-01     | 1.00       | 0.95                  |")
-    print("| F-03     | 1.00       | 0.88                  |")
     print("--------------------------------------------------\n")
 
 if __name__ == "__main__":

@@ -25,4 +25,4 @@ Use during a public AI-discoverability audit to detect conflicting facts (prices
 
 ### Action Selection & Remediation
 *   For Contradictions: Consolidate conflicting facts into a single authoritative truth source.
-*   For F-03: Inject `sameAs` canonical identity references and authoritative external corroboration links into the JSON-LD Organization schema.
+*   For F-03: Recommend injecting `sameAs` canonical identity references and authoritative external corroboration links (like Wikidata) into the JSON-LD Organization schema. Note: Warn the user to only link external identities if there is an exact entity match to avoid incorrect entity resolution.

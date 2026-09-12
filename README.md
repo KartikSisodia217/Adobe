@@ -117,7 +117,7 @@ echo '{"input_url": "https://example.com"}' | python skills/audit-orchestrator/s
 ```
 
 ### 3. Running the Test Suite
-We utilize `pytest` to ensure 100% functionality and security compliance.
+The project is covered by unit, integration, and security tests.
 ```bash
 PYTHONPATH="." python -m pytest tests/
 ```
@@ -126,14 +126,14 @@ PYTHONPATH="." python -m pytest tests/
 
 ## 🔍 Modules & Core Capabilities
 
-1. **Bot & Crawlability Evasion (Stealth Mode)**
-   * Built on `playwright-stealth` to bypass basic WAF and Bot Management systems.
-   * Modifies `navigator.userAgent` and suppresses `AutomationControlled` flags.
+1. **Hardened Browser Configuration**
+   * Uses a hardened browser configuration for compatibility with modern client-rendered sites.
+   * Modifies viewport and interaction behaviors to simulate realistic modern environments.
 2. **Generative Remediation Narratives**
    * Deterministically generates executive summaries ("Narratives") without relying on external LLM APIs (Strict hackathon compliance).
    * Dynamically embeds literal visual code snippets (e.g., `<script type="application/ld+json">`) directly into the Adobe-compliant JSON output to aid developers in fixing errors.
-3. **Fuzzy Semantic Extractor**
-   * Instead of brittle Regex, relies on `thefuzz` and `python-Levenshtein` to semantically map unstructured DOM facts to structured `JSON-LD` facts (e.g. mapping `"$39,990"` directly to `"39990.00"`).
+3. **Pure-Python Semantic Extractor**
+   * Instead of brittle Regex, relies on standard `difflib` token-set heuristics to semantically map unstructured DOM facts to structured `JSON-LD` facts (e.g. mapping `"$39,990"` directly to `"39990.00"`).
 4. **Active Focus Trap Breaker**
    * Dynamically injects keystrokes (`Escape`) and utilizes visual tree traversal to test if modals, cookie walls, or popups completely disable the accessibility tree for automated systems.
 

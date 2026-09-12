@@ -9,10 +9,21 @@ from src.orchestration.errors import RecoverableError
 def _is_same_registrable_domain(url1: str, url2: str) -> bool:
     host1 = urlparse(url1).hostname or ""
     host2 = urlparse(url2).hostname or ""
-    # Simple registrable domain check (e.g. example.com)
-    parts1 = host1.split('.')[-2:]
-    parts2 = host2.split('.')[-2:]
-    return parts1 == parts2
+    
+    if host1 == host2:
+        return True
+        
+    def get_registrable(host: str) -> str:
+        parts = host.split('.')
+        if len(parts) <= 2:
+            return host
+        # Basic public suffix awareness without external dependencies
+        dual_suffixes = {'co.uk', 'com.au', 'co.in', 'co.jp', 'com.br', 'org.uk', 'net.au'}
+        if f"{parts[-2]}.{parts[-1]}" in dual_suffixes and len(parts) >= 3:
+            return f"{parts[-3]}.{parts[-2]}.{parts[-1]}"
+        return f"{parts[-2]}.{parts[-1]}"
+        
+    return get_registrable(host1) == get_registrable(host2)
 
 async def discover_candidates(homepage_url: str, fetcher: RawFetcher) -> tuple[RawPage, set, list]:
     # 1. Fetch homepage
