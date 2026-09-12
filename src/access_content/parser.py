@@ -12,7 +12,8 @@ def evaluate_robots_txt(robots_txt_content: Optional[str], target_url: str) -> L
         return []
     
     rp = RobotFileParser()
-    rp.parse(robots_txt_content.splitlines())
+    lines = robots_txt_content.splitlines()[:50000]
+    rp.parse(lines)
     
     # Testing against major AI retrieval bots to ensure broad generalization
     retrieval_bots = [

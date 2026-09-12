@@ -75,7 +75,6 @@ async def execute_audit(input_url: str) -> dict:
                 else:
                     context.raw_pages.append(res)
                     context.budgets_consumed["raw_pages_fetched"] += 1
-                    
         finally:
             await fetcher.close()
 
@@ -86,6 +85,7 @@ async def execute_audit(input_url: str) -> dict:
             await host.start(allowed_origin=parsed_origin)
             
             for r_cand in render_cands:
+                render_data = None
                 try:
                     render_data = await host.render_page(r_cand)
                     
@@ -112,8 +112,13 @@ async def execute_audit(input_url: str) -> dict:
                 except RecoverableError as e:
                     context.record_limitation(str(e))
                 finally:
-                    if "page" in locals() and render_data.get("page"):
-                        await render_data["page"].close()
+                    try:
+                        if 'adapter' in locals():
+                            await adapter.stop()
+                        if render_data and render_data.get("page"):
+                            await render_data["page"].close()
+                    except Exception:
+                        pass
                         
         except RecoverableError as e:
             context.record_limitation(str(e))

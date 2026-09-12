@@ -1,23 +1,28 @@
 {
   "name": "brand-ai-readiness-audit",
   "version": "1.0.0",
+  "description": "An autonomous multi-skill marketplace that audits any public website for AI discoverability and on-site engagement barriers, producing evidence-backed findings.",
   "skills": [
     {
       "id": "audit-orchestrator",
       "path": "skills/audit-orchestrator",
-      "entrypoint": true
+      "entrypoint": true,
+      "description": "Safely coordinates a read-only public website audit, composes specialized skills, and emits one structured report."
     },
     {
       "id": "access-content-auditor",
-      "path": "skills/access-content-auditor"
+      "path": "skills/access-content-auditor",
+      "description": "Audits crawler access, raw content, structured facts, and render-only content traps."
     },
     {
       "id": "fact-integrity-auditor",
-      "path": "skills/fact-integrity-auditor"
+      "path": "skills/fact-integrity-auditor",
+      "description": "Checks sampled first-party facts for material contradictions and entity ambiguity."
     },
     {
       "id": "engagement-auditor",
-      "path": "skills/engagement-auditor"
+      "path": "skills/engagement-auditor",
+      "description": "Performs bounded browser checks for modal traps, unnamed controls, and navigation blockers."
     }
   ]
 }

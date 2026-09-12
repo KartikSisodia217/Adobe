@@ -15,10 +15,16 @@ class NetworkPolicy:
             
         try:
             loop = asyncio.get_running_loop()
-            ip = await loop.run_in_executor(None, socket.gethostbyname, hostname)
-            is_safe = is_ip_safe(ip)
-            self.dns_cache[hostname] = is_safe
-            return is_safe
+            addrinfo = await loop.getaddrinfo(hostname, 0, proto=socket.IPPROTO_TCP)
+            
+            for res in addrinfo:
+                ip = res[4][0]
+                if not is_ip_safe(ip):
+                    self.dns_cache[hostname] = False
+                    return False
+                    
+            self.dns_cache[hostname] = True
+            return True
         except Exception:
             self.dns_cache[hostname] = False
             return False

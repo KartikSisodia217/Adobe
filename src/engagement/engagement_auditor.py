@@ -18,10 +18,15 @@ async def _value(value: Any) -> Any:
 
 
 def _walk(node: Any, parents: tuple[dict, ...] = ()) -> Iterable[tuple[dict, tuple[dict, ...]]]:
-    if isinstance(node, dict):
-        yield node, parents
-        for child in node.get("children", []) or []:
-            yield from _walk(child, parents + (node,))
+    stack = [(node, parents)]
+    while stack:
+        current, curr_parents = stack.pop()
+        if isinstance(current, dict):
+            yield current, curr_parents
+            children = current.get("children", []) or []
+            # Push in reverse to maintain left-to-right yield order
+            for child in reversed(children):
+                stack.append((child, curr_parents + (current,)))
 
 
 def _text(node: dict) -> str:

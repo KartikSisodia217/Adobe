@@ -66,6 +66,7 @@ class RawFetcher:
         async with self.semaphore:
             current_url = requested_url
             redirect_count = 0
+            retried_429 = False
             
             while redirect_count < 5:
                 try:
@@ -83,10 +84,9 @@ class RawFetcher:
                         if response.status == 429:
                             retry_after = response.headers.get("Retry-After")
                             if retry_after and retry_after.isdigit() and int(retry_after) <= 5:
-                                await asyncio.sleep(int(retry_after))
-                                # Only retry once per 429
-                                if not hasattr(self, '_retried_429'):
-                                    self._retried_429 = True
+                                if not retried_429:
+                                    retried_429 = True
+                                    await asyncio.sleep(int(retry_after))
                                     continue
                             raise RecoverableError(f"Rate limited (429) at {current_url}")
                             
@@ -121,17 +121,20 @@ class RawFetcher:
                 if dobj.unconsumed_tail:
                     truncated = True
             elif encoding == 'br':
-                # brotli doesn't have a max_length built-in to decompress(), but we cap compressed bytes to 2MB.
-                # A 2MB brotli bomb could be large, but brotli in python returns bytes directly.
-                # We'll just do it and slice. Note: real protection would use a streaming brotli decompressor.
-                # For safety, we wrap in try-except and rely on OS memory limits if it's truly massive,
-                # but standard brotli max ratio is around 25000:1 (2MB -> 50GB).
-                # Actually, brotli Decompressor has `process()`.
                 dobj = brotli.Decompressor()
-                decompressed.extend(dobj.process(compressed_bytes))
-                if len(decompressed) > MAX_DECOMPRESSED_BYTES:
-                    decompressed = decompressed[:MAX_DECOMPRESSED_BYTES]
-                    truncated = True
+                chunk_size = 65536
+                for i in range(0, len(compressed_bytes), chunk_size):
+                    chunk = compressed_bytes[i:i+chunk_size]
+                    try:
+                        out = dobj.process(chunk)
+                        decompressed.extend(out)
+                        if len(decompressed) > MAX_DECOMPRESSED_BYTES:
+                            decompressed = decompressed[:MAX_DECOMPRESSED_BYTES]
+                            truncated = True
+                            break
+                    except brotli.error:
+                        truncated = True
+                        break
             else:
                 decompressed = compressed_bytes[:MAX_DECOMPRESSED_BYTES]
                 if len(compressed_bytes) > MAX_DECOMPRESSED_BYTES:

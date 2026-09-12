@@ -2,7 +2,7 @@
 import json
 import os
 import sys
-import yaml
+
 
 def main():
     if not os.path.exists("marketplace.json"):

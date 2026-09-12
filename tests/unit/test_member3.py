@@ -18,19 +18,31 @@ def fact(kind, value):
     return StructuredFact(fact_type=kind, value=value, source="raw_html", page_url=HttpUrl("https://example.com/"))
 
 
+class MockAdapter:
+    def __init__(self, tree, blocked, click_error, close_on_escape, close_on_click, trace, click_changes_url):
+        self.tree = tree
+        self.state = {"blocked": blocked, "url": "https://example.com/1"}
+        self.click_error = click_error
+        self.close_on_escape = close_on_escape
+        self.close_on_click = close_on_click
+        self.trace = trace
+        self.click_changes_url = click_changes_url
+        
+    async def get_accessibility_tree(self): return self.tree
+    async def press(self, key):
+        if self.close_on_escape and key == "Escape": self.state["blocked"] = False
+    async def click(self, role, name):
+        if self.click_error: raise RuntimeError("unreachable")
+        if self.close_on_click and role == "button": self.state["blocked"] = False
+        if self.click_changes_url: self.state["url"] = "https://example.com/2"
+    async def get_computed_accessible_name(self, role): return None
+    async def bounded_focus_trace(self, max_steps): 
+        return (self.trace or ["modal-button"] * max_steps)[:max_steps]
+    async def is_primary_route_blocked(self): return self.state["blocked"]
+    async def get_url(self): return self.state["url"]
+
 def adapter(tree, *, blocked=False, click_error=False, close_on_escape=False, close_on_click=False, trace=None, click_changes_url=True):
-    state = {"blocked": blocked, "url": "https://example.com/1"}
-    async def press(key):
-        if close_on_escape and key == "Escape": state["blocked"] = False
-    async def click(role, name):
-        if click_error: raise RuntimeError("unreachable")
-        if close_on_click and role == "button": state["blocked"] = False
-        if click_changes_url: state["url"] = "https://example.com/2"
-    async def name(role): return None
-    async def focus(limit): return (trace or ["modal-button"] * limit)[:limit]
-    async def route_blocked(): return state["blocked"]
-    async def get_url(): return state["url"]
-    return BrowserAdapter(tree, press, click, name, focus, route_blocked, get_url)
+    return MockAdapter(tree, blocked, click_error, close_on_escape, close_on_click, trace, click_changes_url)
 
 
 @pytest.mark.asyncio

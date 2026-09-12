@@ -5,23 +5,21 @@ def assign_severity_and_confidence(findings: List[CandidateFinding]) -> List[dic
     scored = []
     
     for f in findings:
-        # Confidence rules
         conf = f.confidence
-        # Example escalation based on evidence count
         if len(f.evidence_items) > 1 and conf == "low":
             conf = "medium"
             
-        # Severity rules (precision first)
         severity = "low"
         if conf == "high":
-            if "modal trap" in f.mechanism or "retrieval access restriction" in f.mechanism:
+            if f.detector_id == "G-02":
                 severity = "critical"
+            elif f.detector_id in ("D-01", "D-02", "E-01", "F-02"):
+                severity = "high"
             else:
                 severity = "high"
         elif conf == "medium":
             severity = "medium"
             
-        # Suppress single low confidence evidence findings
         if conf == "low" and len(f.evidence_items) <= 1:
             continue
             

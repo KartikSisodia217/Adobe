@@ -195,18 +195,47 @@ def check_non_text_trap(rendered_html: str, url: str) -> List[CandidateFinding]:
     """ E-02: Non-Text Trap """
     soup = BeautifulSoup(rendered_html, 'lxml')
     findings = []
+    
+    # Patterns that indicate decorative/non-informational images
+    _decorative_patterns = re.compile(r'(logo|icon|placeholder|banner|hero|bg|background|sprite|spacer|pixel|tracking)', re.I)
+    
     for img in soup.find_all('img'):
-        # If image has no alt text but might be important (e.g. inside main)
         parent = img.find_parent(['main', 'article'])
-        if parent and not img.get('alt'):
+        if not parent:
+            continue
+        alt = img.get('alt', '')
+        src = img.get('src', '')
+        
+        # Skip if has meaningful alt text
+        if alt and alt.strip():
+            continue
+            
+        # Skip if likely decorative based on src
+        if _decorative_patterns.search(src):
+            continue
+            
+        # Skip very small images (likely icons/spacers)
+        width = img.get('width', '')
+        height = img.get('height', '')
+        if width and height:
+            try:
+                if int(width) < 50 or int(height) < 50:
+                    continue
+            except ValueError:
+                pass
+        
+        # Only flag if image appears to contain factual content
+        # Check if image is within a product/article context
+        context_parent = img.find_parent(['figure', 'picture']) or img.find_parent(class_=re.compile(r'product|item|detail|gallery', re.I))
+        if context_parent or (not alt and parent.name in ['main', 'article']):
             findings.append(CandidateFinding(
                 detector_id="E-02",
                 mechanism="non-text trap",
                 confidence="medium",
                 affected_entity="Image without alt",
-                evidence_items=[{"img_src": img.get('src')}],
+                evidence_items=[{"img_src": src, "context": parent.name}],
                 category="content-extractability",
                 page_urls=[HttpUrl(url)]
             ))
-            break # only 1 needed per page
+            break  # only 1 needed per page
     return findings
