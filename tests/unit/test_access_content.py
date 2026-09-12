@@ -1,6 +1,6 @@
 import pytest
 from pydantic import HttpUrl
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 
 from src.schemas.v1.context import AuditContext
@@ -16,7 +16,7 @@ def create_context(html_content: str, rendered_html: str = None, url: str = "htt
         headers={},
         page_role="detail",
         size_bytes=len(html_content),
-        fetched_at=datetime.utcnow(),
+        fetched_at=datetime.now(timezone.utc),
         truncated=False
     )
     
@@ -30,7 +30,7 @@ def create_context(html_content: str, rendered_html: str = None, url: str = "htt
             headers={},
             page_role="detail",
             size_bytes=len(rendered_html),
-            fetched_at=datetime.utcnow(),
+            fetched_at=datetime.now(timezone.utc),
             truncated=False,
             accessibility_tree={},
             rendered_html=rendered_html
@@ -39,7 +39,7 @@ def create_context(html_content: str, rendered_html: str = None, url: str = "htt
     return AuditContext(
         audit_id="test-1",
         target_url=HttpUrl(url),
-        started_at=datetime.utcnow(),
+        started_at=datetime.now(timezone.utc),
         raw_pages=[raw_page],
         rendered_pages=rendered_pages,
         coverage_notes=[],
@@ -93,7 +93,7 @@ def test_robots_txt_denied():
     context = AuditContext(
         audit_id="test-robots",
         target_url=HttpUrl("https://example.com"),
-        started_at=datetime.utcnow(),
+        started_at=datetime.now(timezone.utc),
         robots_txt_content="User-agent: OAI-SearchBot\nDisallow: /",
         raw_pages=[],
         rendered_pages=[],
