@@ -31,3 +31,4 @@ class FinalFinding(BaseModel):
     category: Optional[CategoryType] = None
     confidence: Optional[ConfidenceLevel] = None
     why_it_matters: Optional[str] = None
+    detector_id: Optional[str] = None

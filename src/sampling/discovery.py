@@ -6,6 +6,14 @@ from src.fetching.raw_fetcher import RawFetcher
 from src.security.url_normalize import normalize_url
 from src.orchestration.errors import RecoverableError
 
+def _is_same_registrable_domain(url1: str, url2: str) -> bool:
+    host1 = urlparse(url1).hostname or ""
+    host2 = urlparse(url2).hostname or ""
+    # Simple registrable domain check (e.g. example.com)
+    parts1 = host1.split('.')[-2:]
+    parts2 = host2.split('.')[-2:]
+    return parts1 == parts2
+
 async def discover_candidates(homepage_url: str, fetcher: RawFetcher) -> tuple[RawPage, set, list]:
     # 1. Fetch homepage
     try:
@@ -16,20 +24,37 @@ async def discover_candidates(homepage_url: str, fetcher: RawFetcher) -> tuple[R
     discovered_urls = set()
     sitemap_urls = []
     
-    # Extract links from homepage
-    if homepage_raw.html_content:
-        soup = BeautifulSoup(homepage_raw.html_content, 'lxml')
-        for a in soup.find_all('a', href=True):
-            href = a['href']
-            try:
-                full_url = urljoin(str(homepage_raw.url), href)
-                norm_url, _ = normalize_url(full_url, allow_http=True)
-                
-                # Must be same-registrable-domain (for simplicity, same hostname)
-                if urlparse(norm_url).hostname == urlparse(str(homepage_raw.url)).hostname:
-                    discovered_urls.add(norm_url)
-            except Exception:
-                continue
+    # BFS Queue
+    queue = [homepage_raw]
+    visited = {str(homepage_raw.url)}
+    max_bfs_depth = 5 # Fetch up to 5 additional pages to discover more links
+    
+    while queue and max_bfs_depth > 0:
+        current_page = queue.pop(0)
+        
+        if current_page.html_content:
+            soup = BeautifulSoup(current_page.html_content, 'lxml')
+            for a in soup.find_all('a', href=True):
+                href = a['href']
+                try:
+                    full_url = urljoin(str(current_page.url), href)
+                    norm_url, _ = normalize_url(full_url, allow_http=True)
+                    
+                    if _is_same_registrable_domain(norm_url, homepage_url):
+                        discovered_urls.add(norm_url)
+                        # Optionally add to BFS queue if we haven't visited and have depth budget
+                        if norm_url not in visited and len(visited) < 6:
+                            visited.add(norm_url)
+                            # Queue a fetch task! Wait, this is sequential.
+                            # We can just fetch it right now.
+                            try:
+                                next_page = await fetcher.fetch_page(norm_url, page_role="unknown")
+                                queue.append(next_page)
+                                max_bfs_depth -= 1
+                            except Exception:
+                                pass
+                except Exception:
+                    continue
 
     # 2. Attempt sitemap
     parsed_home = urlparse(homepage_url)
@@ -52,7 +77,7 @@ async def discover_candidates(homepage_url: str, fetcher: RawFetcher) -> tuple[R
             if loc.text:
                 try:
                     norm_url, _ = normalize_url(loc.text, allow_http=True)
-                    if urlparse(norm_url).hostname == urlparse(str(homepage_raw.url)).hostname:
+                    if _is_same_registrable_domain(norm_url, homepage_url):
                         sitemap_urls.append(norm_url)
                 except Exception:
                     continue

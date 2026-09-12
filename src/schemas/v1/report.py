@@ -3,7 +3,10 @@ from pydantic import BaseModel, Field
 from .findings import FinalFinding
 
 class Summary(BaseModel):
-    total_findings: int
+    total_detected: int = 0
+    reported_top_findings: int = 0
+    suppressed_findings: int = 0
+    total_findings: int # Kept for backwards compatibility
     critical: int
     high: int
     medium: int

@@ -72,3 +72,54 @@ def select_candidates(homepage_raw: RawPage, discovered_urls: set, sitemap_urls:
             render_candidates.append(cand)
             
     return raw_candidates, render_candidates
+
+from bs4 import BeautifulSoup
+import json
+
+def refine_page_roles(raw_pages: List[RawPage]) -> None:
+    """Semantically infer page roles using actual DOM content (Schema, H1, Title)."""
+    for page in raw_pages:
+        if page.page_role == "landing" or not page.html_content:
+            continue
+            
+        soup = BeautifulSoup(page.html_content, 'lxml')
+        title = (soup.title.string or "").lower()
+        h1s = " ".join([h.get_text() for h in soup.find_all('h1')]).lower()
+        
+        is_product = False
+        is_article = False
+        is_contact = False
+        
+        # 1. Strongest signal: JSON-LD Schema
+        for script in soup.find_all('script', type='application/ld+json'):
+            try:
+                data = json.loads(script.string)
+                if isinstance(data, dict):
+                    doc_type = data.get('@type', '').lower()
+                    if 'product' in doc_type or 'offer' in doc_type:
+                        is_product = True
+                    elif 'article' in doc_type or 'news' in doc_type or 'blogposting' in doc_type:
+                        is_article = True
+                    elif 'contactpage' in doc_type or 'organization' in doc_type:
+                        is_contact = True
+            except Exception:
+                pass
+                
+        # 2. Semantic text signals
+        if 'contact us' in title or 'get in touch' in h1s or 'support' in title:
+            is_contact = True
+        elif 'blog' in title or 'news' in title or 'article' in title:
+            is_article = True
+        elif 'price' in title or 'buy' in title or 'shop' in title:
+            is_product = True
+            
+        # 3. Apply semantic roles
+        if is_product:
+            page.page_role = "detail"
+        elif is_article:
+            page.page_role = "editorial"
+        elif is_contact:
+            page.page_role = "contact"
+        else:
+            # Fallback to structural
+            pass

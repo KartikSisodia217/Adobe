@@ -18,7 +18,7 @@ def get_suggested_action(finding: CandidateFinding) -> SuggestedAction:
         priority="high"
     )
 
-def cap_findings(scored: List[dict]) -> Tuple[List[FinalFinding], List[ProactiveSuggestion]]:
+def cap_findings(scored: List[dict]) -> Tuple[List[FinalFinding], List[ProactiveSuggestion], dict]:
     # Sort by severity rank desc, detector_id asc, affected_entity asc
     sev_rank = {"critical": 4, "high": 3, "medium": 2, "low": 1}
     scored.sort(key=lambda x: (
@@ -92,8 +92,12 @@ def cap_findings(scored: List[dict]) -> Tuple[List[FinalFinding], List[Proactive
                 affected_urls=f.page_urls,
                 category=f.category,
                 confidence=f.confidence,
+                detector_id=f.detector_id,
                 suggested_action=get_suggested_action(f)
             )
             final_findings.append(ff)
             
-    return final_findings, proactive
+    total_detected = sum(1 for x in scored if not x["finding"].detector_id.startswith("P-"))
+    suppressed = total_detected - len(final_findings)
+            
+    return final_findings, proactive, {"total_detected": total_detected, "suppressed": max(0, suppressed)}

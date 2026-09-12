@@ -10,7 +10,7 @@ from src.security.ssrf_guard import resolve_and_validate
 from src.fetching.raw_fetcher import RawFetcher
 from src.robots.robots_gate import retrieve_robots_txt
 from src.sampling.discovery import discover_candidates
-from src.sampling.candidate_selection import select_candidates
+from src.sampling.candidate_selection import select_candidates, refine_page_roles
 from src.browser.browser_host import BrowserHost
 from src.browser.browser_adapter import BrowserAdapter, create_adapter
 from src.schemas.v1 import RenderedPage, AuditReport, Summary, Coverage
@@ -44,7 +44,7 @@ async def execute_audit(input_url: str) -> dict:
             return build_minimal_error_report(norm_url, str(e)).model_dump(mode='json')
 
         # 4. Context
-        context = build_context(norm_url)
+        context = build_context(pinned_url)
         fetcher = RawFetcher()
         raw_findings = []
         structured_facts = []
@@ -54,7 +54,7 @@ async def execute_audit(input_url: str) -> dict:
             await retrieve_robots_txt(context, fetcher)
             
             # 6-7. Discover
-            homepage_raw, discovered, sitemaps = await discover_candidates(norm_url, fetcher)
+            homepage_raw, discovered, sitemaps = await discover_candidates(pinned_url, fetcher)
             context.raw_pages.append(homepage_raw)
             context.budgets_consumed["raw_pages_fetched"] += 1
             
@@ -79,13 +79,17 @@ async def execute_audit(input_url: str) -> dict:
         finally:
             await fetcher.close()
 
+        # Refine roles based on fetched semantic content (H1/Schema)
+        refine_page_roles(context.raw_pages)
+
         # 11-13. Render Subset
         host = BrowserHost()
         try:
-            parsed_origin = urlparse(norm_url).hostname
+            parsed_origin = urlparse(pinned_url).hostname
             await host.start(allowed_origin=parsed_origin)
             
             for r_cand in render_cands:
+                render_data = None
                 try:
                     render_data = await host.render_page(r_cand)
                     
@@ -112,7 +116,7 @@ async def execute_audit(input_url: str) -> dict:
                 except RecoverableError as e:
                     context.record_limitation(str(e))
                 finally:
-                    if "page" in locals() and render_data.get("page"):
+                    if render_data is not None and render_data.get("page"):
                         await render_data["page"].close()
                         
         except RecoverableError as e:
@@ -131,16 +135,16 @@ async def execute_audit(input_url: str) -> dict:
         except Exception as e:
             context.record_limitation(f"M2/M3 failed: {e}")
 
-        # 15-21. Fusion (implemented next)
+        # 15-21. Fusion
         norm_findings = normalize_findings(raw_findings)
         deduped = deduplicate_findings(norm_findings)
         cross = cross_validate_findings(deduped, context)
         scored = assign_severity_and_confidence(cross)
-        final_findings, proactive = cap_findings(scored)
+        final_findings, proactive, cap_stats = cap_findings(scored)
 
         # 22-23. Report Generation
         context.budgets_consumed["runtime_ms"] = int((time.monotonic() - start_time) * 1000)
-        report = build_report(context, final_findings, proactive)
+        report = build_report(context, final_findings, proactive, cap_stats)
         
         logger.info("Audit complete", extra={"phase": "report_generation", "budget_consumption": context.budgets_consumed})
         return report.model_dump(mode='json')

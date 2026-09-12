@@ -1,4 +1,4 @@
-import extruct
+import json
 from bs4 import BeautifulSoup
 from typing import List, Dict, Any, Optional, Tuple
 import re
@@ -7,14 +7,23 @@ from src.schemas.v1.findings import CandidateFinding
 from pydantic import HttpUrl
 
 def parse_json_ld_facts(html_content: str, url: str) -> Tuple[List[StructuredFact], List[CandidateFinding]]:
-    # extruct robustly handles malformed JSON-LD by skipping or partially parsing it
-    data = extruct.extract(html_content, syntaxes=['json-ld'])
-    json_ld_data = data.get('json-ld', [])
-    
+    soup = BeautifulSoup(html_content, 'lxml')
     facts = []
     proactive_findings = []
     
-    for item in json_ld_data:
+    json_ld_items = []
+    for script in soup.find_all('script', type='application/ld+json'):
+        if script.string:
+            try:
+                data = json.loads(script.string.strip())
+                if isinstance(data, list):
+                    json_ld_items.extend(data)
+                elif isinstance(data, dict):
+                    json_ld_items.append(data)
+            except Exception:
+                continue
+                
+    for item in json_ld_items:
         item_type = item.get('@type', '')
         if item_type == 'Product':
             # Proactive Schema Validation

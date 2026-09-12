@@ -14,7 +14,7 @@ def test_fusion_does_not_invent_evidence():
         )
     ]
     scored = assign_severity_and_confidence(findings)
-    final, pro = cap_findings(scored)
+    final, pro, stats = cap_findings(scored)
     assert len(final) == 1
     assert final[0].severity == "critical" # Because of string match in stub
     assert final[0].evidence == "Detector flagged retrieval access restriction on bot."
@@ -28,8 +28,9 @@ def test_fusion_suppresses_low_confidence():
         )
     ]
     scored = assign_severity_and_confidence(findings)
-    final, pro = cap_findings(scored)
+    final, pro, stats = cap_findings(scored)
     assert len(final) == 0
+    assert len(pro) == 0
 
 def test_fusion_dedupes_same_mechanism():
     findings = [

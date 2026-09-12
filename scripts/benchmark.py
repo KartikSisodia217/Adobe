@@ -43,17 +43,9 @@ async def run_benchmark():
             # Actually, `id` in report is "F-001" etc., but let's check `evidence_items` or we can just infer by mechanism title.
             # To be robust, let's map report mechanism titles to roughly expected IDs.
             # E.g. "Robots.txt" -> "D-01", "Rendering gap" -> "E-01"
-            title_to_id = {
-                "Robots.txt": "D-01",
-                "Rendering gap": "E-01",
-                "Schema validation": "D-02",
-                "Modal focus trap": "G-02",
-                "Primary-route-unreachable": "G-03"
-            }
-            
             actual_detectors = []
             for f in report.get("findings", []):
-                mapped_id = title_to_id.get(f["title"], "UNKNOWN")
+                mapped_id = f.get("detector_id", "UNKNOWN")
                 actual_detectors.append(mapped_id)
                 
             expected = set(truth["expected_detectors"])
