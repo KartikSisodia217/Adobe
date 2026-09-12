@@ -2,10 +2,32 @@ import asyncio
 import time
 from src.orchestration.orchestrator import execute_audit
 
-# Example Ground Truth for benchmarking (Expected Detector IDs)
+# Comprehensive Ground Truth for benchmarking (Expected Detector IDs)
 GROUND_TRUTH = {
+    # 1. Clean sites
     "https://example.com": {"expected_detectors": []},
-    "https://mock-defective-site.com/": {"expected_detectors": ["D-01", "E-01"]}
+    "https://www.w3.org/": {"expected_detectors": []},
+    "https://httpbin.org/": {"expected_detectors": []},
+    "https://playwright.dev/": {"expected_detectors": []},
+    "https://reactjs.org/": {"expected_detectors": []},
+    
+    # 2. Defective mocks & real-world problematic patterns
+    "https://mock-defective-site.com/": {"expected_detectors": ["D-01", "E-01"]},
+    "https://bad-ssl.com/": {"expected_detectors": ["D-01"]},
+    
+    # We simulate these by mapping them conceptually to expected detector triggers
+    # In a real environment, we would use local file:// fixtures or a mock server
+    "https://mock-shopify-store.local/": {"expected_detectors": ["D-02"]}, # Schema contradiction on prices
+    "https://mock-spa-react.local/": {"expected_detectors": ["E-01"]}, # Rendering gap
+    "https://mock-wordpress-blog.local/": {"expected_detectors": ["G-01"]}, # Unnamed controls
+    "https://mock-cookie-wall.local/": {"expected_detectors": ["G-02"]}, # Modal focus trap
+    "https://mock-broken-nav.local/": {"expected_detectors": ["G-03"]}, # Primary route unreachable
+    "https://mock-contradictory-price.local/": {"expected_detectors": ["D-02"]}, 
+    "https://mock-ambiguous-entity.local/": {"expected_detectors": ["F-03"]}, # Disambiguation
+    "https://mock-expired-offer.local/": {"expected_detectors": ["F-01"]}, # Expired claim
+    "https://mock-missing-alt.local/": {"expected_detectors": ["E-02"]}, # Non-text trap
+    "https://mock-paywall-hard.local/": {"expected_detectors": ["G-02", "D-01"]}, # Modal trap + robots blocked
+    "https://mock-js-heavy-news.local/": {"expected_detectors": ["E-01", "F-02"]} # Rendering gap + fact contradiction
 }
 
 async def run_benchmark():

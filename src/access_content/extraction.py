@@ -38,7 +38,14 @@ def parse_json_ld_facts(html_content: str, url: str) -> Tuple[List[StructuredFac
                     if 'price' in offers:
                         try:
                             val = str(float(offers['price']))
-                            facts.append(StructuredFact(fact_type="price", value=val, source="json_ld", page_url=HttpUrl(url)))
+                            currency = str(offers.get('priceCurrency', 'Unknown')).lower()
+                            facts.append(StructuredFact(
+                                fact_type="price", 
+                                value=val, 
+                                source="json_ld", 
+                                page_url=HttpUrl(url),
+                                currency=currency
+                            ))
                         except ValueError:
                             pass
                     if 'availability' in offers:
@@ -89,37 +96,76 @@ def extract_facts_from_html(html_content: str, url: str, source: FactSource) -> 
             # We'll just call it article_title for simplicity if not product.
             facts.append(StructuredFact(fact_type="article_title", value=title, source=source, page_url=HttpUrl(url)))
             
-    # Extract prices (supporting multiple international currencies and comma decimals)
+    # Extract prices with currency and optional billing period context
     text = extract_html_text(html_content)
-    price_matches = re.findall(r'(?:[\$\€\£\¥\₹]|usd\s?|eur\s?|gbp\s?|jpy\s?|inr\s?)\s?(\d+(?:[.,]\d{1,2})?)', text, re.IGNORECASE)
+    # Using a cleaner regex string for currencies
+    price_pattern = r'(\$|€|£|¥|₹|usd\s?|eur\s?|gbp\s?|jpy\s?|inr\s?)\s?(\d+(?:[.,]\d{1,2})?)(?:\s*(/month|/year|per month|per year|billed annually|billed monthly))?'
+    price_matches = re.finditer(price_pattern, text, re.IGNORECASE)
+    
     for match in price_matches:
         try:
-            val = str(float(match.replace(',', '.')))
-            facts.append(StructuredFact(fact_type="price", value=val, source=source, page_url=HttpUrl(url)))
+            currency_raw = match.group(1).strip().lower()
+            val = str(float(match.group(2).replace(',', '.')))
+            period_raw = (match.group(3) or "").strip().lower()
+            
+            # Normalize period
+            period = "one-time"
+            if "month" in period_raw:
+                period = "monthly"
+            elif "year" in period_raw or "annual" in period_raw:
+                period = "yearly"
+                
+            # Normalize currency
+            currency_map = {"$": "usd", "€": "eur", "£": "gbp", "¥": "jpy", "₹": "inr"}
+            currency = currency_map.get(currency_raw, currency_raw)
+                
+            facts.append(StructuredFact(
+                fact_type="price", 
+                value=val, 
+                source=source, 
+                page_url=HttpUrl(url),
+                currency=currency,
+                billing_period=period
+            ))
         except ValueError:
             pass
             
     return facts
 
 def check_schema_contradiction(raw_facts: List[StructuredFact], url: str) -> List[CandidateFinding]:
-    """ D-02: Schema Contradiction """
+    """ D-02: Schema Contradiction (Entity-Aware) """
     findings = []
     prices = [f for f in raw_facts if f.fact_type == 'price']
     
-    # Compare raw_html prices vs json_ld prices
-    raw_prices = set([f.value for f in prices if f.source in ['raw_html', 'noscript']])
-    json_ld_prices = set([f.value for f in prices if f.source == 'json_ld'])
+    # Compare raw_html prices vs json_ld prices using entity attributes
+    raw_entities = set([(f.value, f.currency, f.billing_period) for f in prices if f.source in ['raw_html', 'noscript']])
+    json_ld_entities = set([(f.value, f.currency, f.billing_period) for f in prices if f.source == 'json_ld'])
     
-    if raw_prices and json_ld_prices:
-        # If there is a json-ld price that contradicts a raw price
-        # Actually, let's just check if they are completely disjoint
-        if not raw_prices.intersection(json_ld_prices):
+    if raw_entities and json_ld_entities:
+        unsupported_json_ld = []
+        for j_val, j_curr, j_per in json_ld_entities:
+            # Match if value is the same, and currency/period match OR one is Unknown
+            match_found = False
+            for r_val, r_curr, r_per in raw_entities:
+                if r_val == j_val:
+                    curr_match = j_curr.lower() == r_curr.lower() or j_curr.lower() == 'unknown' or r_curr.lower() == 'unknown'
+                    per_match = j_per.lower() == r_per.lower() or j_per.lower() == 'unknown' or r_per.lower() == 'unknown'
+                    if curr_match and per_match:
+                        match_found = True
+                        break
+            if not match_found:
+                unsupported_json_ld.append((j_val, j_curr, j_per))
+                
+        if unsupported_json_ld and len(unsupported_json_ld) == len(json_ld_entities):
             findings.append(CandidateFinding(
                 detector_id="D-02",
-                mechanism="schema validation",
+                mechanism="contradictory facts",
                 confidence="high",
                 affected_entity="Structured Data",
-                evidence_items=[{"raw_prices": list(raw_prices), "json_ld_prices": list(json_ld_prices)}],
+                evidence_items=[{
+                    "visible_price_entities": [{"value": v, "currency": c, "period": p} for v, c, p in raw_entities],
+                    "json_ld_price_entities": [{"value": v, "currency": c, "period": p} for v, c, p in json_ld_entities]
+                }],
                 category="discoverability",
                 page_urls=[HttpUrl(url)]
             ))
