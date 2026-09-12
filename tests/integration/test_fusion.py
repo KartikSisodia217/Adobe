@@ -16,7 +16,7 @@ def test_fusion_does_not_invent_evidence():
     scored = assign_severity_and_confidence(findings)
     final, pro, stats = cap_findings(scored)
     assert len(final) == 1
-    assert final[0].severity == "critical" # Because of string match in stub
+    assert final[0].severity == "high"  # D-01 is high, critical is reserved for blocking failures (G-02)
     assert final[0].evidence == "Detector flagged retrieval access restriction on bot."
 
 def test_fusion_suppresses_low_confidence():

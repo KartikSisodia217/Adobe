@@ -70,7 +70,7 @@ def build_minimal_error_report(input_url: str, error_msg: str) -> AuditReport:
         site=input_url,
         audited_at=datetime.now(timezone.utc).isoformat() + "Z",
         audit_version="1.0.0",
-        summary=Summary(total_findings=0, critical=0, high=0, medium=0, low=0, proactive_suggestions=0),
+        summary=Summary(total_findings=0, critical=0, high=0, medium=0, low=0, proactive_suggestions=0, narrative="No findings were generated due to an error during the audit."),
         coverage=Coverage(
             pages_discovered=0, pages_sampled_raw=0, pages_rendered=0,
             page_roles_sampled=[], not_observed_roles=[], limitations=[error_msg], runtime_ms=0
