@@ -12,6 +12,8 @@ def get_suggested_action(finding: CandidateFinding) -> SuggestedAction:
         return SuggestedAction(summary="Ensure all modal overlays can be closed safely using the 'Escape' key or standard button clicks without trapping focus.", priority="critical")
     if finding.detector_id == "P-01":
         return SuggestedAction(summary="Inject missing properties into your JSON-LD Product schema.", priority="medium", verification='<script type="application/ld+json">\n{\n  "@context": "https://schema.org",\n  "@type": "Product",\n  "description": "Add product description here",\n  "image": "https://example.com/image.jpg",\n  "sku": "12345"\n}\n</script>')
+    if finding.detector_id == "P-02":
+        return SuggestedAction(summary="Inject 'sameAs' canonical identity references and authoritative external corroboration links (like Wikidata/Crunchbase) into your JSON-LD Organization schema.", priority="medium", verification='<script type="application/ld+json">\n{\n  "@context": "https://schema.org",\n  "@type": "Organization",\n  "name": "Your Brand",\n  "sameAs": ["https://www.wikidata.org/wiki/Q123456", "https://en.wikipedia.org/wiki/Your_Brand"]\n}\n</script>')
 
     return SuggestedAction(
         summary=f"Address {finding.mechanism} on {finding.affected_entity}",

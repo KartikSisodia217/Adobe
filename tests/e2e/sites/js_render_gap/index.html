@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <h1>Rendering Gap</h1>
+  <div id="price-container"></div>
+  <script>
+    setTimeout(() => {
+      document.getElementById('price-container').innerText = 'Price: $99.00';
+    }, 100);
+  </script>
+</body>
+</html>

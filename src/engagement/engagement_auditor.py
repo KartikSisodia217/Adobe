@@ -94,18 +94,23 @@ async def _navigation(browser: BrowserAdapter, tree: dict, context: AuditContext
             continue
         try:
             await browser.click("link", _text(node))
-            # Verify actual URL transition AND destination health
+            
+            # Verify actual URL transition OR DOM transition AND destination health
             new_url = await browser.get_url()
             healthy = await browser.is_destination_healthy()
             
-            if new_url != original_url and healthy:
+            # For SPAs: Check if the accessibility tree changed significantly
+            new_tree = await _value(browser.get_accessibility_tree())
+            dom_changed = str(new_tree) != str(tree)
+            
+            if (new_url != original_url or dom_changed) and healthy:
                 return []
-            elif new_url != original_url and not healthy:
+            elif (new_url != original_url or dom_changed) and not healthy:
                 return [_candidate("G-03", "primary-route-unreachable", _text(node),
-                    [{"route_name": _text(node), "error": "Navigated to dead or empty page"}], context, "medium")]
+                    [{"route_name": _text(node), "error": "Navigated to dead or empty page state"}], context, "medium")]
             else:
                 return [_candidate("G-03", "primary-route-unreachable", _text(node),
-                    [{"route_name": _text(node), "error": "Click succeeded but URL did not change"}], context, "medium")]
+                    [{"route_name": _text(node), "error": "Click succeeded but neither URL nor DOM transitioned"}], context, "medium")]
         except Exception as exc:
             return [_candidate("G-03", "primary-route-unreachable", _text(node),
                 [{"route_name": _text(node), "error": type(exc).__name__}], context, "medium")]

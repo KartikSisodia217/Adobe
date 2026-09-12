@@ -57,14 +57,31 @@ def parse_json_ld_facts(html_content: str, url: str) -> Tuple[List[StructuredFac
                             ))
                         except ValueError:
                             pass
+                    if 'priceValidUntil' in offers:
+                        facts.append(StructuredFact(
+                            fact_type="availability",
+                            value=f"Valid until {offers['priceValidUntil']}",
+                            source="json_ld",
+                            page_url=HttpUrl(url)
+                        ))
                     if 'availability' in offers:
                         avail = str(offers['availability'])
                         if 'InStock' in avail:
-                            facts.append(StructuredFact(fact_type="availability", value="InStock", source="json_ld", page_url=HttpUrl(url)))
+                            facts.append(StructuredFact(fact_type="availability", value="In stock", source="json_ld", page_url=HttpUrl(url)))
         elif item_type == 'Article' or item_type == 'NewsArticle':
             if 'headline' in item:
                 facts.append(StructuredFact(fact_type="article_title", value=str(item['headline']), source="json_ld", page_url=HttpUrl(url)))
         elif item_type == 'Organization':
+            if 'sameAs' not in item:
+                proactive_findings.append(CandidateFinding(
+                    detector_id="P-02",
+                    mechanism="entity authority and citation resilience",
+                    confidence="high",
+                    affected_entity="Organization Schema",
+                    evidence_items=[{"missing_property": "sameAs", "description": "No authoritative external corroboration linked."}],
+                    category="discoverability",
+                    page_urls=[HttpUrl(url)]
+                ))
             if 'name' in item:
                 facts.append(StructuredFact(fact_type="organization_name", value=str(item['name']), source="json_ld", page_url=HttpUrl(url)))
                 

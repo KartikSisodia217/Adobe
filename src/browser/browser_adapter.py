@@ -80,7 +80,7 @@ def create_adapter(page, accessibility_tree: Dict[str, Any]) -> BrowserAdapter:
         # Check if the page didn't error out (no 404 in title, and main content exists)
         return await page.evaluate('''() => {
             const text = document.body.innerText.toLowerCase();
-            if (text.includes("404 not found") || text.includes("page not found")) return false;
+            if (text.includes("404 not found") || text.includes("page not found") || text.includes("file not found") || text.includes("error code: 404")) return false;
             return document.querySelectorAll('h1, main, article').length > 0;
         }''')
         

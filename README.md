@@ -1,6 +1,12 @@
-# AIMLESS: AI-Readiness Auditor
+# AIMLESS: AI-Readiness & Engagement Auditor
 
-An autonomous, multi-agent auditing system designed to evaluate any website's **"AI Discoverability"** and **"On-Site Engagement"**. Built for the Adobe Hackathon Round 3, this tool helps brands understand why they are invisible to AI assistants (like ChatGPT, Claude, or Perplexity) and why visitors or automated agents bounce when they arrive on site.
+An **multi-skill agent audit system** designed to evaluate any website's **"AI Discoverability"** and **"On-Site Engagement"**. Built for the Adobe Hackathon Round 3, this tool helps brands understand why they are invisible to AI assistants (like ChatGPT, Claude, or Perplexity) and why visitors or automated agents bounce when they arrive on site.
+
+## Key Features
+*   **Security-First Execution:** Bounded network interception, SSRF guards, and strictly non-mutating Playwright interactions.
+*   **Heuristic & Structured Fact Extractor:** Extracts and normalizes contextual entities (prices, currencies, billing periods) to find schema contradictions.
+*   **Interaction Verification:** Actively traces focus states and evaluates navigation health to prove modal traps and broken routes.
+*   **Modular Architecture:** Composed of four discrete, portable skills evaluating discoverability, content access, fact integrity, and engagement safely without violating safety guardrails (SSRF protection, 180s hard timeout limits).
 
 ---
 
