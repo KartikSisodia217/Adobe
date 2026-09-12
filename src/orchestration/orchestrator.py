@@ -15,10 +15,9 @@ from src.browser.browser_host import BrowserHost
 from src.browser.browser_adapter import BrowserAdapter, create_adapter
 from src.schemas.v1 import RenderedPage, AuditReport, Summary, Coverage
 
-# Stubs for M2/M3
-async def run_m2(context): return []
-async def run_m3_fact(context): return []
-async def run_m3_engagement(adapter, context): return []
+from src.access_content.auditor import run_access_content_audit
+from src.fact_integrity.auditor import run_fact_integrity
+from src.engagement.engagement_auditor import run_interactive_tests
 
 from src.fusion.normalize import normalize_findings
 from src.fusion.dedupe import deduplicate_findings
@@ -48,6 +47,8 @@ async def execute_audit(input_url: str) -> dict:
         # 4. Context
         context = build_context(norm_url)
         fetcher = RawFetcher()
+        raw_findings = []
+        structured_facts = []
         
         try:
             # 5. Robots.txt
@@ -103,8 +104,9 @@ async def execute_audit(input_url: str) -> dict:
                         # 14. M3 Engagement
                         adapter = create_adapter(render_data["page"], render_data["accessibility_tree"])
                         try:
-                            # Invoke M3 (stub)
-                            await run_m3_engagement(adapter, context)
+                            # Invoke M3
+                            m3_eng_findings = await run_interactive_tests(adapter, context)
+                            raw_findings.extend(m3_eng_findings)
                         except Exception as e:
                             context.record_limitation(f"M3 engagement failed on {r_cand['url']}: {e}")
                             
@@ -119,15 +121,18 @@ async def execute_audit(input_url: str) -> dict:
         finally:
             await host.cleanup()
 
-        # M2 and M3 Fact (stubs)
+        # M2 and M3 Fact
         try:
-            await run_m2(context)
-            await run_m3_fact(context)
+            m2_facts, m2_findings = run_access_content_audit(context)
+            structured_facts.extend(m2_facts)
+            raw_findings.extend(m2_findings)
+            
+            m3_fact_findings = await run_fact_integrity(context, structured_facts)
+            raw_findings.extend(m3_fact_findings)
         except Exception as e:
             context.record_limitation(f"M2/M3 failed: {e}")
 
         # 15-21. Fusion (implemented next)
-        raw_findings = [] # Collected from M2/M3
         norm_findings = normalize_findings(raw_findings)
         deduped = deduplicate_findings(norm_findings)
         cross = cross_validate_findings(deduped, context)

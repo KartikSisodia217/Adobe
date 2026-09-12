@@ -2,6 +2,22 @@ from datetime import datetime, timezone
 from typing import List, Dict
 from src.schemas.v1 import AuditContext, FinalFinding, ProactiveSuggestion, AuditReport, Summary, Coverage, ExternalCalls
 
+def generate_narrative(summary: Summary, findings: List[FinalFinding]) -> str:
+    if summary.total_findings == 0:
+        return "Excellent! The website appears highly optimized for AI discoverability and on-site engagement. No critical visibility traps or accessibility barriers were detected during the audit."
+    
+    parts = []
+    if summary.critical > 0:
+        parts.append(f"We found {summary.critical} critical issues that severely block AI agents from navigating or comprehending your site.")
+    if summary.high > 0:
+        parts.append(f"There are {summary.high} high-priority rendering gaps or schema contradictions that prevent facts from surfacing.")
+    
+    if len(findings) > 0:
+        top_issues = ", ".join([f.title.lower() for f in findings[:2]])
+        parts.append(f"Prioritize fixing the {top_issues} to ensure AI assistants can confidently extract your pricing and product data, and smoothly route users through your key workflows.")
+    
+    return " ".join(parts)
+
 def build_report(context: AuditContext, findings: List[FinalFinding], proactive: List[ProactiveSuggestion]) -> AuditReport:
     counts = {"critical": 0, "high": 0, "medium": 0, "low": 0}
     for f in findings:
@@ -16,6 +32,9 @@ def build_report(context: AuditContext, findings: List[FinalFinding], proactive:
         low=counts["low"],
         proactive_suggestions=len(proactive)
     )
+    
+    # Add generated narrative to summary
+    summary.narrative = generate_narrative(summary, findings)
     
     roles_sampled = list(set([p.page_role for p in context.raw_pages]))
     

@@ -1,6 +1,7 @@
 import asyncio
 from typing import List, Dict
 from playwright.async_api import async_playwright, Browser, BrowserContext, Page, Error as PlaywrightError
+from playwright_stealth import stealth_async
 from src.schemas.v1 import RenderedPage, RawPage, PageRole
 from src.orchestration.errors import RecoverableError
 from src.browser.network_policy import NetworkPolicy
@@ -18,10 +19,16 @@ class BrowserHost:
             self.playwright = await async_playwright().start()
             # Startup timeout: 18s via wait_for
             self.browser = await asyncio.wait_for(
-                self.playwright.chromium.launch(headless=True, args=[]), # Spec says "keep browser sandbox enabled... Do not pass --no-sandbox... UNLESS genuinely required by the container and document." I should REMOVE --no-sandbox to strictly satisfy the invariant.
+                self.playwright.chromium.launch(
+                    headless=True, 
+                    args=['--disable-blink-features=AutomationControlled']
+                ),
                 timeout=18.0
             )
-            self.context = await self.browser.new_context()
+            self.context = await self.browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                viewport={"width": 1920, "height": 1080}
+            )
             self.policy = NetworkPolicy(allowed_origin)
             await self.context.route("**/*", self.policy.handle_route)
             
@@ -42,6 +49,8 @@ class BrowserHost:
         
         try:
             page = await self.context.new_page()
+            # Apply stealth plugin to evade bot detection
+            await stealth_async(page)
             
             # Block downloads
             page.on("download", lambda download: asyncio.create_task(download.cancel()))
