@@ -17,7 +17,7 @@ def test_fusion_does_not_invent_evidence():
     final, pro = cap_findings(scored)
     assert len(final) == 1
     assert final[0].severity == "critical" # Because of string match in stub
-    assert final[0].evidence == "Found 1 issues relating to retrieval access restriction."
+    assert final[0].evidence == "Detector flagged retrieval access restriction on bot."
 
 def test_fusion_suppresses_low_confidence():
     findings = [
