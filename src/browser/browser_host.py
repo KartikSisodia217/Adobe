@@ -40,9 +40,7 @@ class BrowserHost:
             await self.cleanup()
             raise RecoverableError(f"Browser startup failed: {e}")
 
-    async def render_page(self, raw_candidate: Dict) -> RenderedPage:
-        url = raw_candidate["url"]
-        role = raw_candidate["role"]
+    async def render_page(self, url: str, role: str) -> Dict:
         page: Page = None
         
         try:

@@ -36,42 +36,57 @@ def infer_role(url: str, anchor_text: str = "") -> PageRole:
         
     return "unknown"
 
-def select_candidates(homepage_raw: RawPage, discovered_urls: set, sitemap_urls: list) -> tuple[List[Dict], List[Dict]]:
+def select_raw_candidates(homepage_url: str, discovered_urls: set, sitemap_urls: list, max_raw_cap: int = 15) -> List[Dict]:
+    """Phase 1: Select URLs for fast raw fetching based on heuristics (URL patterns)."""
     all_candidates = list(discovered_urls.union(set(sitemap_urls)))
     scored = []
     role_counts = {"landing": 1, "detail": 0, "editorial": 0, "contact": 0, "index": 0, "unknown": 0}
     
     for url in all_candidates[:500]:
-        if url == str(homepage_raw.url):
+        if url == homepage_url:
             continue
-        role = infer_role(url) # Can't pass anchor text yet without rewriting discovery
+        role = infer_role(url)
         score = 20 if role_counts.get(role, 0) == 0 else max(1, 10 - role_counts.get(role, 0))
         scored.append({"url": url, "role": role, "score": score})
         role_counts[role] = role_counts.get(role, 0) + 1
         
     scored.sort(key=lambda x: x["score"], reverse=True)
     
-    # Increase coverage intelligently: Raw Cap = 12
-    raw_candidates = [{"url": str(homepage_raw.url), "role": "landing"}]
-    for cand in scored[:11]:
+    raw_candidates = [{"url": homepage_url, "role": "landing"}]
+    for cand in scored[:(max_raw_cap - 1)]:
         raw_candidates.append(cand)
         
-    # Increase render coverage: Render Cap = 5 (diversity sampling)
-    render_candidates = [{"url": str(homepage_raw.url), "role": "landing"}]
-    for cand in raw_candidates[1:]:
-        if cand["role"] not in [c["role"] for c in render_candidates]:
-            render_candidates.append(cand)
-        if len(render_candidates) >= 5:
+    return raw_candidates
+
+def select_render_candidates(raw_pages: List[RawPage], max_render_cap: int = 5) -> List[RawPage]:
+    """Phase 2: Select URLs for expensive browser rendering based on accurate DOM semantics."""
+    render_cands = []
+    seen_roles = set()
+    
+    # Always include landing
+    landing = next((p for p in raw_pages if p.page_role == "landing"), None)
+    if landing:
+        render_cands.append(landing)
+        seen_roles.add("landing")
+        
+    # Prioritize semantic diversity
+    for page in raw_pages:
+        if len(render_cands) >= max_render_cap:
             break
+        if page.page_role not in seen_roles and page.status_code == 200:
+            render_cands.append(page)
+            seen_roles.add(page.page_role)
             
-    # Fill remaining slots with high-scoring pages if diversity didn't fill it
-    for cand in raw_candidates[1:]:
-        if len(render_candidates) >= 5:
-            break
-        if cand not in render_candidates:
-            render_candidates.append(cand)
-            
-    return raw_candidates, render_candidates
+    # Fill remaining slots with priority roles if diversity didn't fill it
+    priority_roles = ["detail", "index", "editorial", "unknown"]
+    for pr in priority_roles:
+        for page in raw_pages:
+            if len(render_cands) >= max_render_cap:
+                break
+            if page.page_role == pr and page not in render_cands and page.status_code == 200:
+                render_cands.append(page)
+                
+    return render_cands
 
 from bs4 import BeautifulSoup
 import json

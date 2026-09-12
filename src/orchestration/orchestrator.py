@@ -10,7 +10,7 @@ from src.security.ssrf_guard import resolve_and_validate
 from src.fetching.raw_fetcher import RawFetcher
 from src.robots.robots_gate import retrieve_robots_txt
 from src.sampling.discovery import discover_candidates
-from src.sampling.candidate_selection import select_candidates, refine_page_roles
+from src.sampling.candidate_selection import select_raw_candidates, select_render_candidates, refine_page_roles
 from src.browser.browser_host import BrowserHost
 from src.browser.browser_adapter import BrowserAdapter, create_adapter
 from src.schemas.v1 import RenderedPage, AuditReport, Summary, Coverage
@@ -58,8 +58,8 @@ async def execute_audit(input_url: str) -> dict:
             context.raw_pages.append(homepage_raw)
             context.budgets_consumed["raw_pages_fetched"] += 1
             
-            # 8-9. Candidate Selection
-            raw_cands, render_cands = select_candidates(homepage_raw, discovered, sitemaps)
+            # 8-9. Candidate Selection (Phase 1 - URL Heuristics)
+            raw_cands = select_raw_candidates(str(homepage_raw.url), discovered, sitemaps)
             
             # 10. Raw Fetch Rest
             tasks = []
@@ -81,6 +81,9 @@ async def execute_audit(input_url: str) -> dict:
 
         # Refine roles based on fetched semantic content (H1/Schema)
         refine_page_roles(context.raw_pages)
+        
+        # 11. Candidate Selection (Phase 2 - Semantic Roles)
+        render_cands = select_render_candidates(context.raw_pages)
 
         # 11-13. Render Subset
         host = BrowserHost()
@@ -91,10 +94,10 @@ async def execute_audit(input_url: str) -> dict:
             for r_cand in render_cands:
                 render_data = None
                 try:
-                    render_data = await host.render_page(r_cand)
+                    render_data = await host.render_page(str(r_cand.url), r_cand.page_role)
                     
                     # Find matching raw page
-                    raw_matching = next((p for p in context.raw_pages if str(p.url) == r_cand["url"]), None)
+                    raw_matching = next((p for p in context.raw_pages if str(p.url) == str(r_cand.url)), None)
                     if raw_matching:
                         r_page = RenderedPage(
                             **raw_matching.model_dump(),

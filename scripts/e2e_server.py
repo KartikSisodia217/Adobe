@@ -22,7 +22,13 @@ fixtures = [
     (8084, "tests/e2e/sites/broken_navigation"),
     (8085, "tests/e2e/sites/robots_blocked"),
     (8086, "tests/e2e/sites/ambiguous_entity"),
-    (8087, "tests/e2e/sites/expired_offer")
+    (8087, "tests/e2e/sites/expired_offer"),
+    (8088, "tests/e2e/sites/fp_schema_contradiction"),
+    (8089, "tests/e2e/sites/fp_modal_trap"),
+    (8090, "tests/e2e/sites/fp_d02_different_product"),
+    (8091, "tests/e2e/sites/fp_g02_nonblocking"),
+    (8092, "tests/e2e/sites/fp_d01_generic_bot"),
+    (8093, "tests/e2e/sites/fp_e01_hydrated_but_in_html")
 ]
 
 if __name__ == "__main__":

@@ -17,7 +17,13 @@ GROUND_TRUTH = {
     "http://127.0.0.1:8084/": {"expected_detectors": ["G-03"]},
     "http://127.0.0.1:8085/": {"expected_detectors": ["D-01"]},
     "http://127.0.0.1:8086/": {"expected_detectors": ["F-03", "P-02"]},
-    "http://127.0.0.1:8087/": {"expected_detectors": ["F-01", "P-01"]}
+    "http://127.0.0.1:8087/": {"expected_detectors": ["F-01", "P-01"]},
+    "http://127.0.0.1:8088/": {"expected_detectors": []},
+    "http://127.0.0.1:8089/": {"expected_detectors": []},
+    "http://127.0.0.1:8090/": {"expected_detectors": []},
+    "http://127.0.0.1:8091/": {"expected_detectors": []},
+    "http://127.0.0.1:8092/": {"expected_detectors": []},
+    "http://127.0.0.1:8093/": {"expected_detectors": []}
 }
 
 async def run_benchmark():

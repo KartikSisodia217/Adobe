@@ -170,16 +170,24 @@ def check_schema_contradiction(raw_facts: List[StructuredFact], url: str) -> Lis
     if raw_entities and json_ld_entities:
         unsupported_json_ld = []
         for j_val, j_curr, j_per in json_ld_entities:
-            # Match if value is the same, and currency/period match OR one is Unknown
-            match_found = False
+            # We only claim a contradiction if the JSON-LD price explicitly conflicts 
+            # with a visible price of the same currency and billing period.
+            has_matching_context = False
+            has_exact_match = False
+            
             for r_val, r_curr, r_per in raw_entities:
-                if r_val == j_val:
-                    curr_match = j_curr.lower() == r_curr.lower() or j_curr.lower() == 'unknown' or r_curr.lower() == 'unknown'
-                    per_match = j_per.lower() == r_per.lower() or j_per.lower() == 'unknown' or r_per.lower() == 'unknown'
-                    if curr_match and per_match:
-                        match_found = True
-                        break
-            if not match_found:
+                curr_match = (j_curr.lower() == r_curr.lower()) or (j_curr.lower() == 'unknown') or (r_curr.lower() == 'unknown')
+                per_match = (j_per.lower() == r_per.lower()) or (j_per.lower() == 'unknown') or (r_per.lower() == 'unknown')
+                
+                if curr_match and per_match:
+                    has_matching_context = True
+                    if r_val == j_val:
+                        has_exact_match = True
+                        
+            # It's only a true contradiction if we found a visible price with the same context (e.g. Monthly USD)
+            # but the numerical value was different. If it's a completely different billing period or currency,
+            # it's just an alternative variant, not a contradiction.
+            if has_matching_context and not has_exact_match:
                 unsupported_json_ld.append((j_val, j_curr, j_per))
                 
         if unsupported_json_ld and len(unsupported_json_ld) == len(json_ld_entities):
