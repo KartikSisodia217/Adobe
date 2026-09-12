@@ -198,7 +198,26 @@ def check_schema_contradiction(raw_facts: List[StructuredFact], url: str) -> Lis
             
     return findings
 
-from thefuzz import fuzz
+import difflib
+
+def token_set_ratio(s1: str, s2: str) -> int:
+    tokens1 = set(s1.split())
+    tokens2 = set(s2.split())
+    
+    intersection = tokens1.intersection(tokens2)
+    diff1to2 = tokens1 - tokens2
+    diff2to1 = tokens2 - tokens1
+    
+    t0 = " ".join(sorted(intersection))
+    t1 = " ".join(sorted(intersection.union(diff1to2)))
+    t2 = " ".join(sorted(intersection.union(diff2to1)))
+    
+    def ratio(a, b):
+        if not a or not b: return 0
+        return int(difflib.SequenceMatcher(None, a, b).ratio() * 100)
+    
+    if not t0 and not t1 and not t2: return 0
+    return max(ratio(t0, t1), ratio(t0, t2), ratio(t1, t2))
 
 def normalize_availability(value: str) -> str:
     """Normalizes availability text to a standard boolean-like state using synonym mapping."""
@@ -234,7 +253,7 @@ def is_fact_matched(r_fact: StructuredFact, raw_facts: List[StructuredFact]) -> 
         # Text fields (titles, names): Fuzzy string matching
         else:
             # Use token_set_ratio which ignores word order and handles partial matches well
-            similarity = fuzz.token_set_ratio(r_fact.value.lower(), f.value.lower())
+            similarity = token_set_ratio(r_fact.value.lower(), f.value.lower())
             if similarity > 85:  # 85% similarity threshold
                 return True
                 
@@ -269,14 +288,21 @@ def check_non_text_trap(rendered_html: str, url: str) -> List[CandidateFinding]:
     findings = []
     for img in soup.find_all('img'):
         # If image has no alt text but might be important (e.g. inside main)
-        parent = img.find_parent(['main', 'article'])
-        if parent and not img.get('alt'):
+        parent = img.find_parent(['main', 'article', 'figure'])
+        
+        # Check if the image looks like it contains primary factual content (charts, infographics, product stats)
+        img_src = img.get('src', '').lower()
+        img_class = ' '.join(img.get('class', [])).lower()
+        
+        is_factual = any(kw in img_src or kw in img_class for kw in ['chart', 'graph', 'data', 'stat', 'infographic', 'price'])
+        
+        if parent and is_factual and not img.get('alt'):
             findings.append(CandidateFinding(
                 detector_id="E-02",
-                mechanism="non-text trap",
+                mechanism="unreadable non-text factual content",
                 confidence="medium",
-                affected_entity="Image without alt",
-                evidence_items=[{"img_src": img.get('src')}],
+                affected_entity="Data/Chart Image",
+                evidence_items=[{"img_src": img.get('src'), "reason": "Image appears to contain factual data but lacks machine-readable alt text."}],
                 category="content-extractability",
                 page_urls=[HttpUrl(url)]
             ))

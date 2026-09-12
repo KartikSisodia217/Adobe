@@ -3,9 +3,11 @@ from src.schemas.v1 import CandidateFinding, ProactiveSuggestion, FinalFinding, 
 
 def get_suggested_action(finding: CandidateFinding) -> SuggestedAction:
     if finding.detector_id == "D-01":
-        return SuggestedAction(summary="Add 'Allow: /' for AI retrieval bots like OAI-SearchBot in robots.txt.", priority="high")
+        return SuggestedAction(summary="This crawler is blocked. If AI discoverability is a goal, review whether public content should be accessible to it.", priority="high")
     if finding.detector_id == "E-01":
         return SuggestedAction(summary="Move core facts (like pricing or availability) out of client-side JavaScript and render them in the static HTML.", priority="high", mechanism="Server-Side Rendering (SSR) or Static Site Generation (SSG)")
+    if finding.detector_id == "E-02":
+        return SuggestedAction(summary="Provide machine-readable text alternatives (alt text or structured data) for images containing primary factual content.", priority="medium")
     if finding.detector_id == "D-02":
         return SuggestedAction(summary="Ensure your JSON-LD structured data matches the visible text on the page.", priority="high")
     if finding.detector_id == "G-02":
@@ -13,7 +15,7 @@ def get_suggested_action(finding: CandidateFinding) -> SuggestedAction:
     if finding.detector_id == "P-01":
         return SuggestedAction(summary="Inject missing properties into your JSON-LD Product schema.", priority="medium", verification='<script type="application/ld+json">\n{\n  "@context": "https://schema.org",\n  "@type": "Product",\n  "description": "Add product description here",\n  "image": "https://example.com/image.jpg",\n  "sku": "12345"\n}\n</script>')
     if finding.detector_id == "P-02":
-        return SuggestedAction(summary="Inject 'sameAs' canonical identity references and authoritative external corroboration links (like Wikidata/Crunchbase) into your JSON-LD Organization schema.", priority="medium", verification='<script type="application/ld+json">\n{\n  "@context": "https://schema.org",\n  "@type": "Organization",\n  "name": "Your Brand",\n  "sameAs": ["https://www.wikidata.org/wiki/Q123456", "https://en.wikipedia.org/wiki/Your_Brand"]\n}\n</script>')
+        return SuggestedAction(summary="Inject 'sameAs' canonical identity references and authoritative external corroboration links (like Wikidata/Crunchbase) into your JSON-LD Organization schema. Only link if there is an exact entity match to avoid incorrect entity resolution.", priority="medium", verification='<script type="application/ld+json">\n{\n  "@context": "https://schema.org",\n  "@type": "Organization",\n  "name": "Your Brand",\n  "sameAs": ["https://www.wikidata.org/wiki/Q123456", "https://en.wikipedia.org/wiki/Your_Brand"]\n}\n</script>')
 
     return SuggestedAction(
         summary=f"Address {finding.mechanism} on {finding.affected_entity}",
@@ -35,6 +37,13 @@ def cap_findings(scored: List[dict]) -> Tuple[List[FinalFinding], List[Proactive
     crit_high_count = 0
     medium_count = 0
     
+    # Track G-02 URLs to suppress G-03
+    g02_urls = set()
+    for s in scored:
+        if s["finding"].detector_id == "G-02":
+            for url in s["finding"].page_urls:
+                g02_urls.add(str(url))
+    
     for idx, s in enumerate(scored):
         f = s["finding"]
         sev = s["severity"]
@@ -44,11 +53,17 @@ def cap_findings(scored: List[dict]) -> Tuple[List[FinalFinding], List[Proactive
             if len(proactive) < 3:
                 proactive.append(ProactiveSuggestion(
                     id=f"P-{(len(proactive)+1):03d}",
+                    detector_id=f.detector_id,
                     title=f.mechanism.capitalize(),
                     priority="medium",
                     rationale=f"Found {len(f.evidence_items)} optimization opportunities for {f.affected_entity}."
                 ))
             continue
+            
+        # Suppress G-03 if G-02 fired on the same URL
+        if f.detector_id == "G-03":
+            if any(str(url) in g02_urls for url in f.page_urls):
+                continue
         
         if sev in ("critical", "high"):
             crit_high_count += 1

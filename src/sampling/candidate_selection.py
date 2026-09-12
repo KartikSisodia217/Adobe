@@ -77,7 +77,7 @@ from bs4 import BeautifulSoup
 import json
 
 def refine_page_roles(raw_pages: List[RawPage]) -> None:
-    """Semantically infer page roles using actual DOM content (Schema, H1, Title)."""
+    """Semantically infer page roles using actual DOM content (Schema, H1, Title, OpenGraph, Breadcrumbs, Structure)."""
     for page in raw_pages:
         if page.page_role == "landing" or not page.html_content:
             continue
@@ -89,6 +89,7 @@ def refine_page_roles(raw_pages: List[RawPage]) -> None:
         is_product = False
         is_article = False
         is_contact = False
+        is_index = False
         
         # 1. Strongest signal: JSON-LD Schema
         for script in soup.find_all('script', type='application/ld+json'):
@@ -102,24 +103,44 @@ def refine_page_roles(raw_pages: List[RawPage]) -> None:
                         is_article = True
                     elif 'contactpage' in doc_type or 'organization' in doc_type:
                         is_contact = True
+                    elif 'collectionpage' in doc_type or 'itemlist' in doc_type:
+                        is_index = True
             except Exception:
                 pass
                 
-        # 2. Semantic text signals
-        if 'contact us' in title or 'get in touch' in h1s or 'support' in title:
-            is_contact = True
-        elif 'blog' in title or 'news' in title or 'article' in title:
-            is_article = True
-        elif 'price' in title or 'buy' in title or 'shop' in title:
+        # 2. OpenGraph Meta Tags
+        og_type = soup.find('meta', property='og:type')
+        if og_type and og_type.get('content'):
+            ctype = og_type.get('content').lower()
+            if ctype in ('product', 'og:product'): is_product = True
+            elif ctype in ('article', 'og:article'): is_article = True
+            
+        # 3. Breadcrumbs & CTA Semantics
+        nav_text = " ".join([nav.get_text() for nav in soup.find_all(['nav', 'div'], class_=re.compile(r'breadcrumb', re.I))]).lower()
+        cta_text = " ".join([a.get_text() for a in soup.find_all(['a', 'button'], class_=re.compile(r'btn|button|cta', re.I))]).lower()
+        if 'add to cart' in cta_text or 'buy now' in cta_text or 'checkout' in cta_text:
             is_product = True
             
-        # 3. Apply semantic roles
+        # 4. Structural patterns (Link density & Repeated Cards)
+        # If there are many identical card-like elements, it's likely an index/listing page
+        cards = soup.find_all(class_=re.compile(r'card|item|grid|list', re.I))
+        if len(cards) > 6 and not is_product and not is_article:
+            is_index = True
+            
+        # 5. Semantic text signals
+        if 'contact us' in title or 'get in touch' in h1s or 'support' in title:
+            is_contact = True
+        elif 'blog' in title or 'news' in title or 'article' in title or 'read more' in nav_text:
+            is_article = True
+        elif 'price' in title or 'shop' in title:
+            is_product = True
+            
+        # Apply semantic roles
         if is_product:
             page.page_role = "detail"
         elif is_article:
             page.page_role = "editorial"
         elif is_contact:
             page.page_role = "contact"
-        else:
-            # Fallback to structural
-            pass
+        elif is_index:
+            page.page_role = "index"

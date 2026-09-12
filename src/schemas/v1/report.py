@@ -29,6 +29,7 @@ class Coverage(BaseModel):
 
 class ProactiveSuggestion(BaseModel):
     id: str
+    detector_id: Optional[str] = None
     title: str
     priority: Literal["high", "medium", "low"]
     rationale: str
