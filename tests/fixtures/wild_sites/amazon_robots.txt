@@ -1,0 +1,15 @@
+User-agent: *
+Disallow: /
+
+User-agent: Googlebot
+Allow: /
+
+# Observed in the wild to block AI scrapers
+User-agent: GPTBot
+Disallow: /
+
+User-agent: OAI-SearchBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /

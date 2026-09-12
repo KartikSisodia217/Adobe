@@ -14,9 +14,15 @@ def evaluate_robots_txt(robots_txt_content: Optional[str], target_url: str) -> L
     rp = RobotFileParser()
     rp.parse(robots_txt_content.splitlines())
     
-    # Examples of retrieval bots vs training bots
-    # OAI-SearchBot is explicitly mentioned in spec as registry to test against
-    retrieval_bots = ["OAI-SearchBot"]
+    # Testing against major AI retrieval bots to ensure broad generalization
+    retrieval_bots = [
+        "OAI-SearchBot",
+        "GPTBot",
+        "ClaudeBot",
+        "PerplexityBot",
+        "CCBot",
+        "Applebot-Extended"
+    ]
     
     findings = []
     

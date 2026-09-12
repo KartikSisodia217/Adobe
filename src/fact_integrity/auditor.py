@@ -15,7 +15,7 @@ from src.schemas.v1 import AuditContext, CandidateFinding, StructuredFact
 WikidataLookup = Callable[[str], Awaitable[list[dict]]]
 _DATE = re.compile(r"\b(20\d{2})[-/](0[1-9]|1[0-2])[-/](0[1-9]|[12]\d|3[01])\b")
 _EXPIRY_WORDS = re.compile(r"\b(expir(?:es|ed|y)|valid (?:until|through)|offer ends?)\b", re.I)
-_PRICE = re.compile(r"(?:[$€£]|usd\s?)(\d+(?:\.\d{1,2})?)", re.I)
+_PRICE = re.compile(r"(?:[\$\€\£\¥\₹]|usd\s?|eur\s?|gbp\s?|jpy\s?|inr\s?)(\d+(?:[.,]\d{1,2})?)", re.I)
 _GENERIC_IDENTITIES = {"company", "official", "website", "brand", "our company", "business"}
 
 
