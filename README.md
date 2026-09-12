@@ -10,36 +10,36 @@ The project operates as an **Agent Skill Marketplace**, orchestrated by a centra
 
 ```mermaid
 graph TD
-    User([User Payload Input]) --> CLI[Orchestrator CLI]
+    User(["User Payload Input"]) --> CLI["Orchestrator CLI"]
     
-    subgraph M1 [Orchestrator (M1)]
-        CLI --> SecurityGuard[SSRF / DNS Guard]
-        SecurityGuard --> BrowserHost[Playwright Browser Host]
-        SecurityGuard --> Fetcher[Raw HTML Fetcher]
-        SecurityGuard --> Discovery[URL Discovery & Sampling]
+    subgraph M1 ["Orchestrator (M1)"]
+        CLI --> SecurityGuard["SSRF / DNS Guard"]
+        SecurityGuard --> BrowserHost["Playwright Browser Host"]
+        SecurityGuard --> Fetcher["Raw HTML Fetcher"]
+        SecurityGuard --> Discovery["URL Discovery & Sampling"]
     end
 
-    subgraph M2 [Access Content (M2)]
-        Fetcher --> Robots[Robots.txt Evaluator]
-        Fetcher --> Extractor[JSON-LD & Fact Extractor]
+    subgraph M2 ["Access Content (M2)"]
+        Fetcher --> Robots["Robots.txt Evaluator"]
+        Fetcher --> Extractor["JSON-LD & Fact Extractor"]
     end
 
-    subgraph M3 [Engagement & Integrity (M3)]
-        BrowserHost --> A11yTree[Accessibility Tree Walker]
-        BrowserHost --> FocusTrap[Modal Trap Tester]
-        Extractor --> FactCheck[Fact Integrity & Contradiction Engine]
+    subgraph M3 ["Engagement & Integrity (M3)"]
+        BrowserHost --> A11yTree["Accessibility Tree Walker"]
+        BrowserHost --> FocusTrap["Modal Trap Tester"]
+        Extractor --> FactCheck["Fact Integrity & Contradiction Engine"]
     end
 
-    M2 --> Fusion[Fusion Engine]
+    M2 --> Fusion["Fusion Engine"]
     M3 --> Fusion
 
-    subgraph Fusion & Reporting
-        Fusion --> Dedupe[Deduplication]
-        Dedupe --> Cap[Capping & Scoring]
-        Cap --> Report[JSON Report Generator]
+    subgraph FusionEngine ["Fusion & Reporting"]
+        Fusion --> Dedupe["Deduplication"]
+        Dedupe --> Cap["Capping & Scoring"]
+        Cap --> Report["JSON Report Generator"]
     end
 
-    Report --> FinalJSON([Adobe Compliant JSON Output])
+    Report --> FinalJSON(["Adobe Compliant JSON Output"])
 ```
 
 ---
