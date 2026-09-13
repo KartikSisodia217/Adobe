@@ -20,12 +20,24 @@ def parse_json_ld_facts(html_content: str, url: str) -> Tuple[List[StructuredFac
                     json_ld_items.extend(data)
                 elif isinstance(data, dict):
                     json_ld_items.append(data)
-            except Exception:
+            except (ValueError, TypeError) as exc:
+                proactive_findings.append(CandidateFinding(
+                    detector_id="D-03", mechanism="malformed JSON-LD", confidence="medium",
+                    affected_entity="structured data", evidence_items=[{"error": type(exc).__name__, "description": "A JSON-LD block could not be parsed."}],
+                    category="discoverability", page_urls=[HttpUrl(url)]
+                ))
                 continue
                 
-    for item in json_ld_items:
-        item_type = item.get('@type', '')
-        if item_type == 'Product':
+    def expand(items):
+        for item in items:
+            if isinstance(item, dict) and isinstance(item.get("@graph"), list):
+                yield from expand(item["@graph"])
+            elif isinstance(item, dict):
+                yield item
+    for item in expand(json_ld_items):
+        item_types = item.get('@type', '')
+        item_types = item_types if isinstance(item_types, list) else [item_types]
+        if any(kind in {'Product', 'Course'} for kind in item_types):
             # Proactive Schema Validation
             missing_props = [p for p in ['description', 'image', 'sku'] if p not in item]
             if missing_props:
@@ -70,10 +82,10 @@ def parse_json_ld_facts(html_content: str, url: str) -> Tuple[List[StructuredFac
                         avail = str(offers['availability'])
                         if 'InStock' in avail:
                             facts.append(StructuredFact(fact_type="availability", value="In stock", source="json_ld", page_url=HttpUrl(url)))
-        elif item_type == 'Article' or item_type == 'NewsArticle':
+        elif any(kind in {'Article', 'NewsArticle', 'FAQPage', 'BreadcrumbList'} for kind in item_types):
             if 'headline' in item:
                 facts.append(StructuredFact(fact_type="article_title", value=str(item['headline']), source="json_ld", page_url=HttpUrl(url)))
-        elif item_type == 'Organization':
+        elif any(kind in {'Organization', 'Corporation', 'LocalBusiness', 'Person', 'WebSite'} for kind in item_types):
             if 'sameAs' not in item:
                 proactive_findings.append(CandidateFinding(
                     detector_id="P-02",
@@ -86,6 +98,18 @@ def parse_json_ld_facts(html_content: str, url: str) -> Tuple[List[StructuredFac
                 ))
             if 'name' in item:
                 facts.append(StructuredFact(fact_type="organization_name", value=str(item['name']), source="json_ld", page_url=HttpUrl(url)))
+            if 'url' in item:
+                facts.append(StructuredFact(fact_type="official_domain", value=str(item['url']), source="json_ld", page_url=HttpUrl(url)))
+            if 'email' in item or 'telephone' in item:
+                facts.append(StructuredFact(fact_type="contact", value=str(item.get('email') or item.get('telephone')), source="json_ld", page_url=HttpUrl(url)))
+
+    canonical = soup.find('link', rel=lambda value: value and 'canonical' in value)
+    if canonical and canonical.get('href'):
+        canonical_url = canonical['href'].strip()
+        if not canonical_url.startswith(('http://', 'https://')):
+            proactive_findings.append(CandidateFinding(detector_id="D-04", mechanism="invalid canonical URL", confidence="medium",
+                affected_entity="canonical URL", evidence_items=[{"canonical": canonical_url, "description": "Canonical URL is not an absolute HTTP(S) URL."}],
+                category="discoverability", page_urls=[HttpUrl(url)]))
                 
     return facts, proactive_findings
 

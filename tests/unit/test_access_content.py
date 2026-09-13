@@ -104,3 +104,13 @@ def test_robots_txt_denied():
     facts, findings = run_access_content_audit(context)
     assert any(f.detector_id == "D-01" for f in findings), "Expected D-01 Retrieval Access finding"
 
+def test_malformed_json_ld_is_reported_without_aborting():
+    context = create_context('<script type="application/ld+json">{bad json</script>')
+    _, findings = run_access_content_audit(context)
+    assert any(f.detector_id == "D-03" for f in findings)
+
+def test_relative_canonical_is_flagged():
+    context = create_context('<link rel="canonical" href="/current"><h1>Example</h1>')
+    _, findings = run_access_content_audit(context)
+    assert any(f.detector_id == "D-04" for f in findings)
+

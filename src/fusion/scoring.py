@@ -13,8 +13,11 @@ def assign_severity_and_confidence(findings: List[CandidateFinding]) -> List[dic
         if conf == "high":
             if f.detector_id == "G-02":
                 severity = "critical"
-            elif f.detector_id in ("D-01", "D-02", "E-01", "F-02"):
+            elif f.detector_id in ("D-01", "D-02", "E-01", "F-02", "B-02"):
                 severity = "high"
+            elif f.detector_id == "B-01":
+                # A well-evidenced action destination conflict can misroute users.
+                severity = "critical"
             else:
                 severity = "high"
         elif conf == "medium":
