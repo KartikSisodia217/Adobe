@@ -1,0 +1,1037 @@
+{
+  "site": "https://100xdevs.com/",
+  "audited_at": "2026-09-13T14:22:10.922667+00:00Z",
+  "audit_version": "1.0.0",
+  "summary": {
+    "total_detected": 32,
+    "reported_top_findings": 8,
+    "suppressed_findings": 24,
+    "total_findings": 8,
+    "critical": 1,
+    "high": 7,
+    "medium": 0,
+    "low": 0,
+    "proactive_suggestions": 3,
+    "narrative": "We found 1 critical issues that severely block AI agents from navigating or comprehending your site. There are 7 high-priority rendering gaps, conflicting destinations, or schema contradictions that prevent facts from surfacing. Prioritize fixing the conflicting authoritative destination, potentially stale or conflicting fact to ensure AI assistants can confidently extract your pricing and product data, and smoothly route users through your key workflows.",
+    "scores": {
+      "ai_discoverability": 0,
+      "content_extractability": 100,
+      "entity_clarity": 24,
+      "brand_identity_confidence": 24,
+      "on_site_orientation": 24,
+      "first_party_identity_confidence": 84,
+      "cross_web_identity_confidence": 24,
+      "source_consistency": 24,
+      "external_conflict_risk": 76,
+      "overall_ai_readiness": 42
+    }
+  },
+  "coverage": {
+    "pages_discovered": 15,
+    "pages_sampled_raw": 15,
+    "pages_rendered": 5,
+    "page_roles_sampled": [
+      "index",
+      "unknown",
+      "editorial",
+      "landing"
+    ],
+    "not_observed_roles": [],
+    "limitations": [],
+    "runtime_ms": 14424,
+    "external_calls": {
+      "wikidata": 0
+    }
+  },
+  "findings": [
+    {
+      "id": "F-001",
+      "title": "Conflicting authoritative destination",
+      "severity": "critical",
+      "evidence": "Detector flagged conflicting authoritative destination on purchase/enrollment destination.",
+      "suggested_action": {
+        "summary": "Publish one current authoritative destination and clarify the relationship to the conflicting source.",
+        "priority": "critical",
+        "mechanism": null,
+        "verification": null,
+        "steps": [
+          "State the official domain and action destination on key pages.",
+          "Where a prior platform or reseller is known, describe its current status factually.",
+          "Verify redirects, profiles, and listings point to the current destination."
+        ]
+      },
+      "evidence_items": [
+        {
+          "source": "https://100xdevs.com/",
+          "fact": "official_destination",
+          "value": "https://100xdevs.com/",
+          "confidence": "high",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://100xdevs-tanay.vercel.app/",
+          "fact": "destination",
+          "value": "https://100xdevs-tanay.vercel.app/",
+          "source_classification": "historical first-party",
+          "connecting_evidence": [
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_ins"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_tw"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "harkirat1"
+            },
+            {
+              "anchor": "shared_brand_name",
+              "value": "100xdevs"
+            }
+          ],
+          "confidence": "high",
+          "context": "100xdevs 100xdevs Login Join now",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://100xdevs.com/",
+          "fact": "official_destination",
+          "value": "https://100xdevs.com/",
+          "confidence": "high",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://www.100xdevs.co.in/",
+          "fact": "destination",
+          "value": "https://www.100xdevs.co.in/admissions",
+          "source_classification": "historical first-party",
+          "connecting_evidence": [
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_tw"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat-li"
+            }
+          ],
+          "confidence": "high",
+          "context": "Apply now \u2192 Admissions open for 2026 cohort \u00b7 Limited seats Apply now \u2192",
+          "description": "Evidence item"
+        }
+      ],
+      "affected_urls": [
+        "https://100xdevs.com/",
+        "https://100xdevs-tanay.vercel.app/"
+      ],
+      "category": "brand-identity",
+      "confidence": "high",
+      "why_it_matters": null,
+      "detector_id": "B-01",
+      "sources": [
+        {
+          "source": "https://100xdevs.com/",
+          "fact": "official_destination",
+          "value": "https://100xdevs.com/",
+          "confidence": "high",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://100xdevs-tanay.vercel.app/",
+          "fact": "destination",
+          "value": "https://100xdevs-tanay.vercel.app/",
+          "source_classification": "historical first-party",
+          "connecting_evidence": [
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_ins"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_tw"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "harkirat1"
+            },
+            {
+              "anchor": "shared_brand_name",
+              "value": "100xdevs"
+            }
+          ],
+          "confidence": "high",
+          "context": "100xdevs 100xdevs Login Join now",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://100xdevs.com/",
+          "fact": "official_destination",
+          "value": "https://100xdevs.com/",
+          "confidence": "high",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://www.100xdevs.co.in/",
+          "fact": "destination",
+          "value": "https://www.100xdevs.co.in/admissions",
+          "source_classification": "historical first-party",
+          "connecting_evidence": [
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_tw"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat-li"
+            }
+          ],
+          "confidence": "high",
+          "context": "Apply now \u2192 Admissions open for 2026 cohort \u00b7 Limited seats Apply now \u2192",
+          "description": "Evidence item"
+        }
+      ],
+      "risk": "Evidence shows a potentially wrong or ambiguous authoritative source."
+    },
+    {
+      "id": "F-002",
+      "title": "Potentially stale or conflicting fact",
+      "severity": "high",
+      "evidence": "Detector flagged potentially stale or conflicting fact on pricing (\u20b95,999 vs $150).",
+      "suggested_action": {
+        "summary": "Reconcile the observed fact with the authoritative source before treating either value as incorrect.",
+        "priority": "high",
+        "mechanism": null,
+        "verification": null,
+        "steps": [
+          "Confirm the current value with the owner.",
+          "Update or request correction of stale public representations.",
+          "Expose the current value in visible content and structured data."
+        ]
+      },
+      "evidence_items": [
+        {
+          "source": "https://100xdevs.com/",
+          "fact": "official_price",
+          "value": "\u20b95,999",
+          "confidence": "high",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://harkirat.classx.co.in/",
+          "fact": "external_price",
+          "value": "$150",
+          "source_classification": "historical first-party",
+          "connecting_evidence": [
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_tw"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "harkirat1"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_ins"
+            },
+            {
+              "anchor": "shared_brand_name",
+              "value": "100xdevs"
+            }
+          ],
+          "timestamp": null,
+          "confidence": "high",
+          "description": "Evidence item"
+        }
+      ],
+      "affected_urls": [
+        "https://100xdevs.com/",
+        "https://harkirat.classx.co.in/"
+      ],
+      "category": "brand-identity",
+      "confidence": "high",
+      "why_it_matters": null,
+      "detector_id": "B-02",
+      "sources": [
+        {
+          "source": "https://100xdevs.com/",
+          "fact": "official_price",
+          "value": "\u20b95,999",
+          "confidence": "high",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://harkirat.classx.co.in/",
+          "fact": "external_price",
+          "value": "$150",
+          "source_classification": "historical first-party",
+          "connecting_evidence": [
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_tw"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "harkirat1"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_ins"
+            },
+            {
+              "anchor": "shared_brand_name",
+              "value": "100xdevs"
+            }
+          ],
+          "timestamp": null,
+          "confidence": "high",
+          "description": "Evidence item"
+        }
+      ],
+      "risk": "Evidence shows a potentially wrong or ambiguous authoritative source."
+    },
+    {
+      "id": "F-003",
+      "title": "Potentially stale or conflicting fact",
+      "severity": "high",
+      "evidence": "Detector flagged potentially stale or conflicting fact on pricing (\u20b95,999 vs rs 100).",
+      "suggested_action": {
+        "summary": "Reconcile the observed fact with the authoritative source before treating either value as incorrect.",
+        "priority": "high",
+        "mechanism": null,
+        "verification": null,
+        "steps": [
+          "Confirm the current value with the owner.",
+          "Update or request correction of stale public representations.",
+          "Expose the current value in visible content and structured data."
+        ]
+      },
+      "evidence_items": [
+        {
+          "source": "https://100xdevs.com/",
+          "fact": "official_price",
+          "value": "\u20b95,999",
+          "confidence": "high",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://www.100xdevs.co.in/",
+          "fact": "external_price",
+          "value": "rs 100",
+          "source_classification": "historical first-party",
+          "connecting_evidence": [
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_tw"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat-li"
+            }
+          ],
+          "timestamp": null,
+          "confidence": "high",
+          "description": "Evidence item"
+        }
+      ],
+      "affected_urls": [
+        "https://100xdevs.com/",
+        "https://www.100xdevs.co.in/"
+      ],
+      "category": "brand-identity",
+      "confidence": "high",
+      "why_it_matters": null,
+      "detector_id": "B-02",
+      "sources": [
+        {
+          "source": "https://100xdevs.com/",
+          "fact": "official_price",
+          "value": "\u20b95,999",
+          "confidence": "high",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://www.100xdevs.co.in/",
+          "fact": "external_price",
+          "value": "rs 100",
+          "source_classification": "historical first-party",
+          "connecting_evidence": [
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_tw"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat-li"
+            }
+          ],
+          "timestamp": null,
+          "confidence": "high",
+          "description": "Evidence item"
+        }
+      ],
+      "risk": "Evidence shows a potentially wrong or ambiguous authoritative source."
+    },
+    {
+      "id": "F-004",
+      "title": "Outdated platform representation",
+      "severity": "high",
+      "evidence": "Detector flagged outdated platform representation on historical brand presence.",
+      "suggested_action": {
+        "summary": "Migrate or redirect historical platform visitors to the authoritative domain and add migration notices.",
+        "priority": "high",
+        "mechanism": null,
+        "verification": null,
+        "steps": [
+          "Add prominent migration notices or 301 redirects on older platforms.",
+          "Ensure all official profiles point exclusively to the authoritative domain.",
+          "Declare authoritative domain in Organization schema."
+        ]
+      },
+      "evidence_items": [
+        {
+          "source": "https://100xdevs.com/",
+          "fact": "official_domain",
+          "value": "100xdevs.com",
+          "confidence": "high",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://harkirat.classx.co.in/",
+          "fact": "historical_representation",
+          "value": "harkirat.classx.co.in",
+          "classification": "historical first-party",
+          "connecting_evidence": [
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_tw"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "harkirat1"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_ins"
+            },
+            {
+              "anchor": "shared_brand_name",
+              "value": "100xdevs"
+            }
+          ],
+          "issue": "Historical platform remains discoverable but lacks current official domain link or redirect.",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://100xdevs.com/",
+          "fact": "official_domain",
+          "value": "100xdevs.com",
+          "confidence": "high",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://100xdevs-tanay.vercel.app/",
+          "fact": "historical_representation",
+          "value": "100xdevs-tanay.vercel.app",
+          "classification": "historical first-party",
+          "connecting_evidence": [
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_ins"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_tw"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "harkirat1"
+            },
+            {
+              "anchor": "shared_brand_name",
+              "value": "100xdevs"
+            }
+          ],
+          "issue": "Historical platform remains discoverable but lacks current official domain link or redirect.",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://100xdevs.com/",
+          "fact": "official_domain",
+          "value": "100xdevs.com",
+          "confidence": "high",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://www.100xdevs.co.in/",
+          "fact": "historical_representation",
+          "value": "100xdevs.co.in",
+          "classification": "historical first-party",
+          "connecting_evidence": [
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_tw"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat-li"
+            }
+          ],
+          "issue": "Historical platform remains discoverable but lacks current official domain link or redirect.",
+          "description": "Evidence item"
+        }
+      ],
+      "affected_urls": [
+        "https://100xdevs.com/",
+        "https://harkirat.classx.co.in/"
+      ],
+      "category": "brand-identity",
+      "confidence": "high",
+      "why_it_matters": null,
+      "detector_id": "B-05",
+      "sources": [
+        {
+          "source": "https://100xdevs.com/",
+          "fact": "official_domain",
+          "value": "100xdevs.com",
+          "confidence": "high",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://harkirat.classx.co.in/",
+          "fact": "historical_representation",
+          "value": "harkirat.classx.co.in",
+          "classification": "historical first-party",
+          "connecting_evidence": [
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_tw"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "harkirat1"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_ins"
+            },
+            {
+              "anchor": "shared_brand_name",
+              "value": "100xdevs"
+            }
+          ],
+          "issue": "Historical platform remains discoverable but lacks current official domain link or redirect.",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://100xdevs.com/",
+          "fact": "official_domain",
+          "value": "100xdevs.com",
+          "confidence": "high",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://100xdevs-tanay.vercel.app/",
+          "fact": "historical_representation",
+          "value": "100xdevs-tanay.vercel.app",
+          "classification": "historical first-party",
+          "connecting_evidence": [
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_ins"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_tw"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "harkirat1"
+            },
+            {
+              "anchor": "shared_brand_name",
+              "value": "100xdevs"
+            }
+          ],
+          "issue": "Historical platform remains discoverable but lacks current official domain link or redirect.",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://100xdevs.com/",
+          "fact": "official_domain",
+          "value": "100xdevs.com",
+          "confidence": "high",
+          "description": "Evidence item"
+        },
+        {
+          "source": "https://www.100xdevs.co.in/",
+          "fact": "historical_representation",
+          "value": "100xdevs.co.in",
+          "classification": "historical first-party",
+          "connecting_evidence": [
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat_tw"
+            },
+            {
+              "anchor": "shared_social_channel",
+              "value": "kirat-li"
+            }
+          ],
+          "issue": "Historical platform remains discoverable but lacks current official domain link or redirect.",
+          "description": "Evidence item"
+        }
+      ],
+      "risk": "Evidence shows a potentially wrong or ambiguous authoritative source."
+    },
+    {
+      "id": "F-005",
+      "title": "Contradictory facts",
+      "severity": "high",
+      "evidence": "Detector flagged contradictory facts on structured data.",
+      "suggested_action": {
+        "summary": "Ensure your JSON-LD structured data matches the visible text on the page.",
+        "priority": "high",
+        "mechanism": null,
+        "verification": null,
+        "steps": []
+      },
+      "evidence_items": [
+        {
+          "visible_price_entities": [
+            {
+              "entity": "100xSchool Combined Bootcamp",
+              "value": "5.99",
+              "currency": "inr",
+              "period": "one-time"
+            },
+            {
+              "entity": "100xSchool Combined Bootcamp",
+              "value": "8.99",
+              "currency": "inr",
+              "period": "one-time"
+            },
+            {
+              "entity": "100xSchool Combined Bootcamp",
+              "value": "3.99",
+              "currency": "inr",
+              "period": "one-time"
+            }
+          ],
+          "json_ld_price_entities": [
+            {
+              "entity": "100xSchool Combined Bootcamp",
+              "value": "5999.0",
+              "currency": "inr",
+              "period": "one-time"
+            }
+          ],
+          "description": "Evidence item"
+        }
+      ],
+      "affected_urls": [
+        "https://100xdevs.com/new-courses/100xschool-combined-bootcamp"
+      ],
+      "category": "discoverability",
+      "confidence": "high",
+      "why_it_matters": null,
+      "detector_id": "D-02",
+      "sources": [],
+      "risk": null
+    },
+    {
+      "id": "F-006",
+      "title": "First-party-contradiction",
+      "severity": "high",
+      "evidence": "Detector flagged first-party-contradiction: Conflicting value '100xDevs' found for organization_name. Conflicting value '100xDevs' found for organization_name. Conflicting value 'Harkirat Singh' found for organization_name.",
+      "suggested_action": {
+        "summary": "Address first-party-contradiction on organization_name",
+        "priority": "high",
+        "mechanism": null,
+        "verification": null,
+        "steps": []
+      },
+      "evidence_items": [
+        {
+          "fact_type": "organization_name",
+          "value": "100xDevs",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/",
+          "identity": [
+            "https://100xdevs.com/",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        },
+        {
+          "fact_type": "organization_name",
+          "value": "100xDevs",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/",
+          "identity": [
+            "https://100xdevs.com/",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        },
+        {
+          "fact_type": "organization_name",
+          "value": "Harkirat Singh",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/",
+          "identity": [
+            "https://100xdevs.com/",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        }
+      ],
+      "affected_urls": [
+        "https://100xdevs.com/"
+      ],
+      "category": "discoverability",
+      "confidence": "high",
+      "why_it_matters": null,
+      "detector_id": "F-02",
+      "sources": [
+        {
+          "fact_type": "organization_name",
+          "value": "100xDevs",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/",
+          "identity": [
+            "https://100xdevs.com/",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        },
+        {
+          "fact_type": "organization_name",
+          "value": "100xDevs",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/",
+          "identity": [
+            "https://100xdevs.com/",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        },
+        {
+          "fact_type": "organization_name",
+          "value": "Harkirat Singh",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/",
+          "identity": [
+            "https://100xdevs.com/",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        }
+      ],
+      "risk": null
+    },
+    {
+      "id": "F-007",
+      "title": "First-party-contradiction",
+      "severity": "high",
+      "evidence": "Detector flagged first-party-contradiction: Conflicting value '100xDevs' found for organization_name. Conflicting value '100xDevs' found for organization_name. Conflicting value 'Harkirat Singh' found for organization_name.",
+      "suggested_action": {
+        "summary": "Address first-party-contradiction on organization_name",
+        "priority": "high",
+        "mechanism": null,
+        "verification": null,
+        "steps": []
+      },
+      "evidence_items": [
+        {
+          "fact_type": "organization_name",
+          "value": "100xDevs",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/web3",
+          "identity": [
+            "https://100xdevs.com/web3",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        },
+        {
+          "fact_type": "organization_name",
+          "value": "100xDevs",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/web3",
+          "identity": [
+            "https://100xdevs.com/web3",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        },
+        {
+          "fact_type": "organization_name",
+          "value": "Harkirat Singh",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/web3",
+          "identity": [
+            "https://100xdevs.com/web3",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        }
+      ],
+      "affected_urls": [
+        "https://100xdevs.com/web3"
+      ],
+      "category": "discoverability",
+      "confidence": "high",
+      "why_it_matters": null,
+      "detector_id": "F-02",
+      "sources": [
+        {
+          "fact_type": "organization_name",
+          "value": "100xDevs",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/web3",
+          "identity": [
+            "https://100xdevs.com/web3",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        },
+        {
+          "fact_type": "organization_name",
+          "value": "100xDevs",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/web3",
+          "identity": [
+            "https://100xdevs.com/web3",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        },
+        {
+          "fact_type": "organization_name",
+          "value": "Harkirat Singh",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/web3",
+          "identity": [
+            "https://100xdevs.com/web3",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        }
+      ],
+      "risk": null
+    },
+    {
+      "id": "F-008",
+      "title": "First-party-contradiction",
+      "severity": "high",
+      "evidence": "Detector flagged first-party-contradiction: Conflicting value '100xDevs' found for organization_name. Conflicting value '100xDevs' found for organization_name. Conflicting value 'Harkirat Singh' found for organization_name.",
+      "suggested_action": {
+        "summary": "Address first-party-contradiction on organization_name",
+        "priority": "high",
+        "mechanism": null,
+        "verification": null,
+        "steps": []
+      },
+      "evidence_items": [
+        {
+          "fact_type": "organization_name",
+          "value": "100xDevs",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/100xdevs",
+          "identity": [
+            "https://100xdevs.com/100xdevs",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        },
+        {
+          "fact_type": "organization_name",
+          "value": "100xDevs",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/100xdevs",
+          "identity": [
+            "https://100xdevs.com/100xdevs",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        },
+        {
+          "fact_type": "organization_name",
+          "value": "Harkirat Singh",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/100xdevs",
+          "identity": [
+            "https://100xdevs.com/100xdevs",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        }
+      ],
+      "affected_urls": [
+        "https://100xdevs.com/100xdevs"
+      ],
+      "category": "discoverability",
+      "confidence": "high",
+      "why_it_matters": null,
+      "detector_id": "F-02",
+      "sources": [
+        {
+          "fact_type": "organization_name",
+          "value": "100xDevs",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/100xdevs",
+          "identity": [
+            "https://100xdevs.com/100xdevs",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        },
+        {
+          "fact_type": "organization_name",
+          "value": "100xDevs",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/100xdevs",
+          "identity": [
+            "https://100xdevs.com/100xdevs",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        },
+        {
+          "fact_type": "organization_name",
+          "value": "Harkirat Singh",
+          "source": "json_ld",
+          "page_url": "https://100xdevs.com/100xdevs",
+          "identity": [
+            "https://100xdevs.com/100xdevs",
+            "organization_name",
+            "unknown",
+            "one-time",
+            "unknown"
+          ],
+          "description": "Evidence item"
+        }
+      ],
+      "risk": null
+    }
+  ],
+  "proactive_suggestions": [
+    {
+      "id": "P-001",
+      "detector_id": "P-01",
+      "title": "Schema optimization",
+      "priority": "medium",
+      "rationale": "Found 1 optimization opportunities for product schema."
+    },
+    {
+      "id": "P-002",
+      "detector_id": "P-01",
+      "title": "Schema optimization",
+      "priority": "medium",
+      "rationale": "Found 1 optimization opportunities for product schema."
+    },
+    {
+      "id": "P-003",
+      "detector_id": "P-01",
+      "title": "Schema optimization",
+      "priority": "medium",
+      "rationale": "Found 1 optimization opportunities for product schema."
+    }
+  ],
+  "query_simulation": [
+    {
+      "question": "What is the official website of 100xDevs?",
+      "required_fact": "official domain",
+      "method": "Check first-party clarity and observed public-source agreement; this does not simulate an AI answer."
+    },
+    {
+      "question": "Who provides 100xDevs?",
+      "required_fact": "organization identity",
+      "method": "Check first-party clarity and observed public-source agreement; this does not simulate an AI answer."
+    },
+    {
+      "question": "What is the current contact destination for 100xDevs?",
+      "required_fact": "contact or official destination",
+      "method": "Check first-party clarity and observed public-source agreement; this does not simulate an AI answer."
+    },
+    {
+      "question": "Where can I buy, book, or sign up with 100xDevs?",
+      "required_fact": "current authoritative destination",
+      "method": "Check first-party clarity and observed public-source agreement; this does not simulate an AI answer."
+    },
+    {
+      "question": "Is harkirat.classx.co.in an official or current source for 100xDevs?",
+      "required_fact": "source classification: historical first-party",
+      "method": "Check first-party clarity and observed public-source agreement; this does not simulate an AI answer."
+    },
+    {
+      "question": "Is 100xdevs-tanay.vercel.app an official or current source for 100xDevs?",
+      "required_fact": "source classification: historical first-party",
+      "method": "Check first-party clarity and observed public-source agreement; this does not simulate an AI answer."
+    },
+    {
+      "question": "Is 100xdevs.quantapar.com an official or current source for 100xDevs?",
+      "required_fact": "source classification: third-party",
+      "method": "Check first-party clarity and observed public-source agreement; this does not simulate an AI answer."
+    },
+    {
+      "question": "Is 100xdevs.co.in an official or current source for 100xDevs?",
+      "required_fact": "source classification: historical first-party",
+      "method": "Check first-party clarity and observed public-source agreement; this does not simulate an AI answer."
+    }
+  ]
+}

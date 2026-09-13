@@ -10,17 +10,35 @@ def calculate_scores(findings: List[FinalFinding], context: AuditContext | None 
         "content_extractability": {"content-extractability"},
         "entity_clarity": {"brand-identity"},
         "brand_identity_confidence": {"brand-identity"},
-        "source_consistency": {"brand-identity"},
         "on_site_orientation": {"engagement", "brand-identity"},
     }
     scores = {}
     for name, categories in groups.items():
         deduction = sum(penalties[f.severity] for f in findings if f.category in categories)
         scores[name] = max(0, 100 - deduction)
-    # Absence of cross-web evidence is uncertainty, not proof of identity clarity.
+
+    # Separate First-party Identity Confidence from Cross-web verification
+    first_party_deduction = sum(
+        penalties[f.severity] for f in findings
+        if f.detector_id in {"B-04", "D-02"}
+    )
+    scores["first_party_identity_confidence"] = max(0, 100 - first_party_deduction)
+
     external_checked = bool(context and context.external_sources)
-    scores["cross_web_identity_confidence"] = scores["brand_identity_confidence"] if external_checked else 50
-    scores["external_conflict_risk"] = max(0, 100 - scores["source_consistency"]) if external_checked else 50
+    if external_checked:
+        cross_web_deduction = sum(
+            penalties[f.severity] for f in findings
+            if f.detector_id in {"B-01", "B-02", "B-03", "B-05"}
+        )
+        scores["cross_web_identity_confidence"] = max(0, 100 - cross_web_deduction)
+        scores["source_consistency"] = max(0, 100 - cross_web_deduction)
+        scores["external_conflict_risk"] = min(100, cross_web_deduction)
+    else:
+        # Absence of cross-web evidence is uncertainty, not proof of cross-web identity clarity.
+        scores["cross_web_identity_confidence"] = 50
+        scores["source_consistency"] = 50
+        scores["external_conflict_risk"] = 50
+
     scores["overall_ai_readiness"] = round(sum(scores.values()) / len(scores))
     return scores
 
@@ -34,7 +52,7 @@ def generate_narrative(summary: Summary, findings: List[FinalFinding], context: 
     if summary.critical > 0:
         parts.append(f"We found {summary.critical} critical issues that severely block AI agents from navigating or comprehending your site.")
     if summary.high > 0:
-        parts.append(f"There are {summary.high} high-priority rendering gaps or schema contradictions that prevent facts from surfacing.")
+        parts.append(f"There are {summary.high} high-priority rendering gaps, conflicting destinations, or schema contradictions that prevent facts from surfacing.")
     
     if len(findings) > 0:
         top_issues = ", ".join([f.title.lower() for f in findings[:2]])
@@ -68,8 +86,8 @@ def build_report(context: AuditContext, findings: List[FinalFinding], proactive:
     
     coverage = Coverage(
         pages_discovered=len(context.raw_pages), # Using fetched count for simplicity here
-        pages_sampled_raw=context.budgets_consumed["raw_pages_fetched"],
-        pages_rendered=context.budgets_consumed["pages_rendered"],
+        pages_sampled_raw=context.budgets_consumed.get("raw_pages_fetched", len(context.raw_pages)),
+        pages_rendered=context.budgets_consumed.get("pages_rendered", 0),
         page_roles_sampled=roles_sampled,
         not_observed_roles=[],
         limitations=context.coverage_notes,

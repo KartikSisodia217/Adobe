@@ -47,7 +47,7 @@ async def execute_audit(input_url: str, external_sources: list[dict] | None = No
 
         # 4. Context
         context = build_context(norm_url)
-        context.external_sources = external_sources or []
+        context.external_sources = list(external_sources or [])
         fetcher = RawFetcher()
         raw_findings = []
         structured_facts = []
@@ -60,8 +60,6 @@ async def execute_audit(input_url: str, external_sources: list[dict] | None = No
             homepage_raw, discovered, sitemaps = await discover_candidates(norm_url, fetcher)
             context.raw_pages.append(homepage_raw)
             context.budgets_consumed["raw_pages_fetched"] += 1
-            discovered_external = await discover_external_sources(context.raw_pages, norm_url, enabled=discover_external_sources_enabled)
-            context.external_sources.extend(discovered_external)
             
             # 8-9. Candidate Selection
             raw_cands = select_raw_candidates(str(homepage_raw.url), discovered, sitemaps)
@@ -83,6 +81,17 @@ async def execute_audit(input_url: str, external_sources: list[dict] | None = No
                     
             # 10.5 Refine roles
             refine_page_roles(context.raw_pages)
+
+            # 10.6 Bounded Cross-Web External Discovery
+            try:
+                discovered_external = await discover_external_sources(context.raw_pages, norm_url, enabled=discover_external_sources_enabled)
+                existing_urls = {str(s.get("url", "")) for s in context.external_sources}
+                for d in discovered_external:
+                    if str(d.get("url", "")) not in existing_urls:
+                        context.external_sources.append(d)
+                        existing_urls.add(str(d.get("url", "")))
+            except Exception as e:
+                context.record_limitation(f"External discovery error: {e}")
             
             # 11. Render Candidates
             render_cands = select_render_candidates(context.raw_pages)

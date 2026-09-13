@@ -10,6 +10,8 @@ def get_suggested_action(finding: CandidateFinding) -> SuggestedAction:
         return SuggestedAction(summary="Strengthen identity anchors so people and machines can distinguish the official entity from same-name sources.", priority="medium", steps=["Use consistent organization name, domain, and contact details.", "Add verified Organization sameAs references where appropriate."])
     if finding.detector_id == "B-04":
         return SuggestedAction(summary="Make the official source and current action destination explicit on the site.", priority="medium", steps=["Add a concise official-site statement.", "Name the current purchase, contact, or signup destination."])
+    if finding.detector_id == "B-05":
+        return SuggestedAction(summary="Migrate or redirect historical platform visitors to the authoritative domain and add migration notices.", priority="high", steps=["Add prominent migration notices or 301 redirects on older platforms.", "Ensure all official profiles point exclusively to the authoritative domain.", "Declare authoritative domain in Organization schema."])
     if finding.detector_id == "D-01":
         return SuggestedAction(summary="This crawler is blocked. If AI discoverability is a goal, review whether public content should be accessible to it.", priority="high")
     if finding.detector_id == "E-01":
