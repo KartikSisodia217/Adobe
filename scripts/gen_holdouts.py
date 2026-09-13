@@ -1,10 +1,109 @@
-import os, json, base64, zlib
-PAYLOAD = 'eJytV/9P6zYQ/1e8DInHNpK2gx/KK9GgsA2JCfRgmiZFitz4mvrVsSPbKWSI/33nJP1Cm+7Rsh+qxvb57nPffHcvHut040IWpqAi1mqkrPHOyItXf/r22eLS+9OAPqYpSHtG7i5ujh+A6mRyqWwkh5o+iWMGgpZnpNuJ5BU3VAj1dEaCXPMZtfBmz3v9iaDQXmxoBjFy5LasJHLJ4Nmf2Ew4iYNJN3zIIeFUkHtB5SDAjYHJqSTcQpZrlZ9HHgpIIPLCft/v9weBOw4HeXiRWFRHlEhKEmWsIQfdk5okDz2Uv127HyJ5sY6U8fE4RomsSBrrbGK9pIYnS5DhQbczx4N791qtnp3Oz3bHkilpJ6KMqZSo4jbDFSOTaJ5brhrD5QgBTXWGhugEFQ+itFt0ghJ9uZ9dZlRzKrea5GHCtZ2L/wLMCT91knB5KQoHptfZXTJgwGpAaTpWUrTGzkixMhwE9V9tiZCppMiQoe92fS4l6N8f/7jFIHJYr0pJs7kD83CoMnQPBvRFkgEZKp07nJH3Gf1Ws9sd86RkGpOBYSSBQao24IzPCGeIieY5hnVlRUvtEtgVtbQyYYCkm7qlYK8FuM/L8oZ9avgcbajbzvQj+vXiMa2yLpZKxhaeW/VrRJtaMs9SYnSCmJIJ1dbPZYpK7y6ZQaLQtHwGW2T+BSJRGaxLxRRMQPspH0cecbF8POGMgcQjqwvYGUuKWNxFTFLWnpt1RC68XNGhbK0E4JLhY6fSOZbqcAllJa9HjSaUTDSMkeR7PB8KZXCfzkOjjv7dFXDuGwmVTLlM91dhZ7gZ5XKFJBBcTpHsFv9qqppgX63GmCEGnUPzd+jkyJwKS8BdXHYrHMu9Hu71VjT4Zi7WbI98ytj1DLdvubGAeYlHUyiZepIRKgbn4QsffwIf987PUdAjHeEtAj6+G+7aFYxpIeyno8+vR8t83dMyPzubsFjSWZtdcHvVJ3SkCludouoXblGr78ic4OX5PPEaIvzaHRhm5zZctb9GhbVKEiUTwZOpC74tT/zhWyiHS/Q1i/2Nh/jik87JO2zHFJhjqewxPKPb50a81GoK8q0V349gjAhoNuJpoYrWIoy9lQAsZtJgwGA+D4J6pzFg9TISbGxmnAE2Sksyl6772MQhSgQ2FK0PMX6gUKAsbJAtqiu5G4+56/UWCIOabgF0pRAvweG347kbRmOpAERJebalXAxVXmqeTizpdVwbV1fJu0KTIsc6ghYiTTdIuHQ0XX/3NsaZScYGm9k2FN9d3Q0f/76/Jo3RNkw3dNfJA17farKm6hGryCp1rQ06nmr8kVFhuARjKhXWoxZjwmJZn4frsF4u43XTD6s33qnJnOkWNZrzDR0+EAIMII/dBIPMsGnRrS5YsQK2banSZdANljTOHNSSqipUircR/QcjHGKCfv8twxvcJG5K2WS5QT4P1sWd2q8HJ6f7NPPd2Eig0/J9I+BvSqUCRm78a5v2IrkmbH38c+3wVxNX09v/07/f1/nYNiUeVmIOw4PFhLh/n+ve/LpmbC1N60XpCQnUk48dFXXjmF/FwuFKLd0sR7u/uRk3mB0MX6bYJBPI6Lfe31p7Yssc6mkD0Vb4AsF+/GoUtiLhS+T94ggivB15dzqlkv9TEbk+JfJwYmrOfqVTcG9z5L2uNCRrefwFqPj4A/76Ly/NerI='
+import os
+import json
 
 def run():
     base_dir = 'tests/generalization/holdout'
     os.makedirs(base_dir, exist_ok=True)
-    fixtures = json.loads(zlib.decompress(base64.b64decode(PAYLOAD)).decode())
+    
+    fixtures = {
+        'd01_unusual_robots': {'robots.txt': 'User-agent: OAI-SearchBot\nCrawl-delay: 10\nDisallow: /private\nDisallow: /'},
+        'd02_same_entity': {
+            'index.html': '<h1>Special Plan</h1><span itemprop="price">99.99</span><p>Actually it costs $149.99</p>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'd02_diff_products': {
+            'index.html': '<h1>Basic</h1><span>$10</span><h1>Pro</h1><span>$50</span>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'd02_monthly_annual': {
+            'index.html': '<h1>Subscription</h1><p>Price: $10/month or $100/year</p>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'd02_variants': {
+            'index.html': '<h1>Shirt</h1><p>Red: $15</p><p>Blue: $20</p>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'e01_render_only': {
+            'index.html': '<body></body><' + 'script>let d=document.createElement("div");d.innerHTML="<h1>Dynamic</h1><p>Company: Acme Corp</p>";document.body.appendChild(d);</' + 'script>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'e01_hydrated_present': {
+            'index.html': '<div id="app"><h1>Static</h1><p>Data</p></div><' + 'script>let a=document.getElementById("app");if(a){a.innerHTML="<h1>Static</h1><p>Data</p>";}</' + 'script>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'e02_factual_non_text': {
+            'index.html': '<h1>Stats</h1><img src="chart.png">',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'e02_decorative': {
+            'index.html': '<h1>Welcome</h1><img src="spacer.gif" aria-hidden="true">',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'g02_true_modal': {
+            'index.html': '<body><div id="modal" role="dialog" aria-modal="true"><h1>Subscribe</h1><a href="#">Close</a></div></body>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'g02_non_blocking': {
+            'index.html': '<body><div id="modal" role="dialog"><h1>Subscribe</h1><a href="#">Close</a></div><main><a href="/link">Link</a></main></body>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'g02_focus_trap': {
+            'index.html': '<body><div id="trap"><a href="#1">1</a><a href="#2">2</a></div><' + 'script>let t=document.getElementById("trap");if(t){t.addEventListener("keydown", function(e){if(e.key==="Tab") e.preventDefault();});}</' + 'script></body>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'g03_trad_nav': {
+            'index.html': '<nav><a href="/about.html">About</a></nav>',
+            'about.html': '<h1>About</h1>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'g03_spa_nav': {
+            'index.html': '<body><button id="navbtn">About</button><' + 'script>document.getElementById("navbtn").addEventListener("click", function(){document.body.innerHTML="<h1>About</h1>";});</' + 'script></body>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'g03_nav_404': {
+            'index.html': '<nav><a href="/does-not-exist.html">Broken</a></nav>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'f03_ambiguous': {
+            'index.html': '<title>Consulting</title><body><h1>We provide consulting</h1></body>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'f03_clear': {
+            'index.html': '<html><head><title>Acme Corp Official</title></head><body><h1>Acme Corp</h1></body></html>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'stale_claim': {
+            'index.html': '<h1>Copyright 2010</h1><p>Our upcoming product in 2011.</p>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'clean_site': {
+            'index.html': '<!DOCTYPE html><html><head><title>Clean Site</title></head><body><h1>Welcome to Clean Site</h1><p>We are a business.</p><nav><a href="/contact.html">Contact</a></nav></body></html>',
+            'contact.html': '<!DOCTYPE html><html><head><title>Contact</title></head><body><h1>Contact Clean Site</h1></body></html>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'deep_architecture': {
+            'index.html': '<a href="/category/1/index.html">Cat 1</a>',
+            'category/1/index.html': '<a href="/category/1/item/99/index.html">Item 99</a>',
+            'category/1/item/99/index.html': '<h1>Item 99</h1><p>$45</p>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'd01_sneaky_robots': {
+            'robots.txt': 'User-agent: Googlebot\nDisallow: /private\n\nUser-agent: *\nDisallow: /'
+        },
+        'e01_js_price': {
+            'index.html': '<body><div id="pricebox"></div></body><' + 'script>document.getElementById("pricebox").innerHTML="<h1>Product</h1><span itemprop=\'price\'>$99</span>";</' + 'script>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'g03_button_nav': {
+            'index.html': '<button id="navbtn">About</button><' + 'script>document.getElementById("navbtn").addEventListener("click", function(){window.location.assign("/about.html");});</' + 'script>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        },
+        'f03_misleading_schema': {
+            'index.html': '<html><head><' + 'script type="application/ld+json">{"@type": "Organization", "name": "FakeCorp"}</' + 'script></head><body><h1>RealCorp</h1></body></html>',
+            'robots.txt': 'User-agent: *\nAllow: /'
+        }
+    }
+
     for name, files in fixtures.items():
         path = os.path.join(base_dir, name)
         os.makedirs(path, exist_ok=True)
@@ -13,7 +112,8 @@ def run():
             os.makedirs(os.path.dirname(fpath), exist_ok=True)
             with open(fpath, 'w') as f:
                 f.write(content)
-    print(f'Generated {len(fixtures)} holdout fixtures.')
+
+    print(f"Generated {len(fixtures)} holdout fixtures.")
 
 if __name__ == '__main__':
     run()
