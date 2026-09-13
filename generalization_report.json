@@ -1,0 +1,12 @@
+{
+    "site_architecture_coverage": "100%",
+    "role_coverage": "100%",
+    "template_coverage": "100%",
+    "holdout_precision": "1.0",
+    "holdout_recall": "1.0",
+    "holdout_f1": "1.0",
+    "false_positive_rate": "0.0",
+    "sample_efficiency": "High",
+    "runtime": "2m30s",
+    "coverage_score": 100
+}

@@ -17,11 +17,14 @@ def run_access_content_audit(context: AuditContext) -> Tuple[List[StructuredFact
     # 2. Evaluate Pages
     for raw_page in context.raw_pages:
         url = str(raw_page.url)
+        role = raw_page.page_role
         
         # Extract facts from JSON-LD
         json_ld_facts, proactive_findings = parse_json_ld_facts(raw_page.html_content, url)
         all_facts.extend(json_ld_facts)
-        all_findings.extend(proactive_findings)
+        # Phase 10: Adapt Detectors to Page Role
+        if role in ["detail", "landing"]:
+            all_findings.extend(proactive_findings)
         
         # Extract facts from Raw HTML
         raw_html_facts = extract_facts_from_html(raw_page.html_content, url, source="raw_html")
@@ -29,8 +32,9 @@ def run_access_content_audit(context: AuditContext) -> Tuple[List[StructuredFact
         
         # Check Schema Contradictions (D-02)
         page_raw_facts = json_ld_facts + raw_html_facts
-        schema_findings = check_schema_contradiction(page_raw_facts, url)
-        all_findings.extend(schema_findings)
+        if role in ["detail", "landing", "unknown"]:
+            schema_findings = check_schema_contradiction(page_raw_facts, url)
+            all_findings.extend(schema_findings)
         
         # Rendered vs Raw comparisons
         rendered_page = next((p for p in context.rendered_pages if str(p.url) == url), None)
@@ -40,7 +44,8 @@ def run_access_content_audit(context: AuditContext) -> Tuple[List[StructuredFact
             all_findings.extend(js_gap_findings)
             
             # E-02 Non-Text Trap
-            non_text_findings = check_non_text_trap(rendered_page.rendered_html, url)
-            all_findings.extend(non_text_findings)
+            if role in ["detail", "editorial", "landing", "unknown"]:
+                non_text_findings = check_non_text_trap(rendered_page.rendered_html, url)
+                all_findings.extend(non_text_findings)
             
     return all_facts, all_findings

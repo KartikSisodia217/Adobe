@@ -77,7 +77,7 @@ def create_adapter(page, accessibility_tree: Dict[str, Any]) -> BrowserAdapter:
                         fut.set_result(None)
                 elif action == "is_primary_route_blocked":
                     res = await page.evaluate('''() => {
-                        const hasModal = document.querySelectorAll('dialog[open], [aria-modal="true"]').length > 0;
+                        const hasModal = document.querySelectorAll('dialog[open], [role="dialog"], [aria-modal="true"]').length > 0;
                         const isBodyInert = document.body.inert;
                         const isBodyHidden = window.getComputedStyle(document.body).overflow === 'hidden';
                         return hasModal || isBodyInert || isBodyHidden;

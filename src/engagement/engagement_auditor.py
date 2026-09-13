@@ -76,10 +76,13 @@ async def _modal_trap(browser: BrowserAdapter, tree: dict, context: AuditContext
             if not await _value(browser.is_primary_route_blocked()):
                 return []
         trace = await browser.bounded_focus_trace(max_steps=8)
-        trapped = len(trace) == 8 and len(set(trace)) <= 2
         
         # Consider a route completely obstructed if focus is trapped and all safe exits fail
         # This prevents false positives on well-implemented dialogs where user can still navigate
+        # If BODY is in the trace, focus escaped to the main document.
+        trace_upper = [str(t).upper() for t in trace]
+        trapped = len(trace) == 8 and len(set(trace_upper)) <= 2 and "BODY" not in trace_upper
+        
         if trapped:
             return [_candidate("G-02", "modal focus trap", _text(modal) or "blocking modal",
                 [{"primary_task_obstructed": True, "pointer_interaction_intercepted": True, "escape_failed": True, "safe_exit_failed": True, "focus_trace": trace,
