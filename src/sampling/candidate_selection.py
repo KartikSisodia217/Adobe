@@ -96,7 +96,7 @@ def refine_page_roles(raw_pages: List[RawPage]) -> None:
             continue
             
         soup = BeautifulSoup(page.html_content, 'lxml')
-        title = (soup.title.string or "").lower()
+        title = (soup.title.string or "").lower() if soup.title else ""
         h1s = " ".join([h.get_text() for h in soup.find_all('h1')]).lower()
         
         is_product = False

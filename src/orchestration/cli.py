@@ -16,7 +16,13 @@ async def main():
             external_sources = data.get("external_sources", [])
             if not isinstance(external_sources, list):
                 external_sources = []
-            report = await asyncio.wait_for(execute_audit(input_url, external_sources), timeout=270.0)
+            
+            # Pass as a config dict to match execute_audit signature
+            config = {"external_sources": external_sources}
+            if "config" in data and isinstance(data["config"], dict):
+                config.update(data["config"])
+                
+            report = await asyncio.wait_for(execute_audit(input_url, config), timeout=270.0)
     except asyncio.TimeoutError:
         url = input_url if 'input_url' in locals() and isinstance(input_url, str) else "unknown"
         report = build_minimal_error_report(url, "Audit hit 270s hard stop").model_dump(mode='json')

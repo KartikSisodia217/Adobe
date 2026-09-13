@@ -157,7 +157,8 @@ These limitations exist by design and do not contribute to a "degraded AI readin
 skills/
 ├── audit-orchestrator/       # The entrypoint and orchestrator skill
 ├── access-content-auditor/   # D-01, E-01, E-02
-├── fact-integrity-auditor/   # D-02
+├── fact-integrity-auditor/   # D-02, F-02, F-03
+├── brand-identity-audit/     # B-01, B-02, B-03, B-04
 └── engagement-auditor/       # G-01, G-02, G-03
 
 src/                          # Shared schemas, models, utilities, and security logic
