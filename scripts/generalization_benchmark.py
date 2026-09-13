@@ -150,7 +150,7 @@ async def run_benchmark():
         "site_architecture_coverage": list(architectures),
         "role_coverage": list(roles),
         "template_coverage": list(templates),
-        "sample_efficiency": "dynamically_measured",
+        "sample_efficiency": "Not measured",
         "runtime": runtime,
         "limitations": []
     }

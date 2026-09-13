@@ -2,7 +2,7 @@
 set -e
 
 echo "Validating marketplace..."
-PYTHONPATH="." python3 scripts/validate_marketplace.py
+PYTHONPATH="." python scripts/validate_marketplace.py
 
 echo "Creating package..."
 rm -f aimless-marketplace.zip

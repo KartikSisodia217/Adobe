@@ -10,6 +10,20 @@ def refine_page_roles(raw_pages: List[RawPage]) -> None:
 def select_render_candidates(raw_pages: List[RawPage], max_render_cap: int = 5) -> List[RawPage]:
     refine_page_roles(raw_pages)
     
+    total_pages = len(raw_pages)
+    
+    # Adaptive site size calculation
+    if total_pages <= 7:
+        dynamic_cap = total_pages
+    elif total_pages <= 50:
+        dynamic_cap = min(15, total_pages)
+    else:
+        dynamic_cap = 20
+        
+    # Use the larger of provided cap or dynamic cap (unless we are hard-bounding for testing)
+    # Actually, we should just use dynamic cap but respect hard limits.
+    effective_cap = min(max(max_render_cap, dynamic_cap), 20)
+    
     render_cands = []
     covered_roles = set()
     covered_templates = set()
@@ -28,7 +42,7 @@ def select_render_candidates(raw_pages: List[RawPage], max_render_cap: int = 5) 
             
     remaining = [p for p in raw_pages if p not in render_cands and p.status_code == 200]
     
-    while remaining and len(render_cands) < max_render_cap:
+    while remaining and len(render_cands) < effective_cap:
         best_p = None
         best_score = -1.0
         for p in remaining:
@@ -50,7 +64,7 @@ def select_render_candidates(raw_pages: List[RawPage], max_render_cap: int = 5) 
             break
             
     for p in remaining:
-        if len(render_cands) >= max_render_cap: break
+        if len(render_cands) >= effective_cap: break
         render_cands.append(p)
         
     return render_cands

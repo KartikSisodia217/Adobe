@@ -4,6 +4,7 @@ from src.schemas.v1.facts import StructuredFact
 from src.schemas.v1.findings import CandidateFinding
 from .parser import evaluate_robots_txt
 from .extraction import parse_json_ld_facts, extract_facts_from_html, check_schema_contradiction, check_js_rendering_gap, check_non_text_trap
+from src.orchestration.applicability import detector_applicability, Applicability
 
 def run_access_content_audit(context: AuditContext) -> Tuple[List[StructuredFact], List[CandidateFinding]]:
     all_facts = []
@@ -17,22 +18,23 @@ def run_access_content_audit(context: AuditContext) -> Tuple[List[StructuredFact
     # 2. Evaluate Pages
     for raw_page in context.raw_pages:
         url = str(raw_page.url)
-        role = raw_page.page_role
         
         # Extract facts from JSON-LD
         json_ld_facts, proactive_findings = parse_json_ld_facts(raw_page.html_content, url)
         all_facts.extend(json_ld_facts)
         # Phase 10: Adapt Detectors to Page Role
-        if role in ["detail", "landing"]:
+        if detector_applicability(raw_page, "D-02") in [Applicability.APPLICABLE, Applicability.UNCERTAIN]:
             all_findings.extend(proactive_findings)
-        
+        else:
+            context.record_limitation(f"Schema issue check skipped on {url} because it was classified as {raw_page.page_role} with high confidence.")
+            
         # Extract facts from Raw HTML
         raw_html_facts = extract_facts_from_html(raw_page.html_content, url, source="raw_html")
         all_facts.extend(raw_html_facts)
         
         # Check Schema Contradictions (D-02)
         page_raw_facts = json_ld_facts + raw_html_facts
-        if role in ["detail", "landing", "unknown"]:
+        if detector_applicability(raw_page, "D-02") in [Applicability.APPLICABLE, Applicability.UNCERTAIN]:
             schema_findings = check_schema_contradiction(page_raw_facts, url)
             all_findings.extend(schema_findings)
         
@@ -44,8 +46,10 @@ def run_access_content_audit(context: AuditContext) -> Tuple[List[StructuredFact
             all_findings.extend(js_gap_findings)
             
             # E-02 Non-Text Trap
-            if role in ["detail", "editorial", "landing", "unknown"]:
+            if detector_applicability(raw_page, "E-02") in [Applicability.APPLICABLE, Applicability.UNCERTAIN]:
                 non_text_findings = check_non_text_trap(rendered_page.rendered_html, url)
                 all_findings.extend(non_text_findings)
+            else:
+                context.record_limitation(f"Non-text factual check (E-02) skipped on {url} because it was classified as {raw_page.page_role}.")
             
     return all_facts, all_findings
