@@ -48,8 +48,12 @@ HOLDOUTS = {
     8124: ("f03_misleading_schema", ["F-03"])
 }
 
+import scripts.gen_holdouts as gen_holdouts
+
 async def run_benchmark():
-    print("Starting Generalization Benchmark...")
+    gen_holdouts.run()
+    print("Starting Generalization Benchmark on 24 holdout cases...")
+    print("WARNING: This tests unseen site architectures. Low recall is expected and correct.")
     threads = []
     base_dir = "tests/generalization/holdout"
     for port, (d_name, _) in HOLDOUTS.items():
