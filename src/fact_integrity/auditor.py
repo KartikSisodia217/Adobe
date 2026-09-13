@@ -59,17 +59,29 @@ def _expired_claims(facts: Iterable[StructuredFact], today: date) -> list[Candid
 
 
 def build_fact_identity(fact: StructuredFact) -> tuple:
-    """Builds a normalized identity to ensure we only compare related facts."""
-    # Scope to entity name if known, otherwise scope to the specific page URL
-    # to prevent falsely comparing different unknown products across the site.
+    """Builds a normalized identity to ensure we only compare semantically related facts.
+
+    Key design decisions (preventing false positives):
+    - entity_type is included so person_name and organization_name never share a group.
+    - entity_subject scopes prices to the specific product/course heading found in the DOM,
+      so five different courses at five different prices are NOT grouped as contradictions.
+    - price_qualifier is included so "original" (struck-through) and "current" prices
+      are never compared against each other.
+    """
     scope = fact.entity.casefold() if fact.entity and fact.entity != "Unknown" else str(fact.page_url)
-    
+    # For prices: prefer the DOM-scoped subject over the page-level entity
+    subject = (fact.entity_subject.casefold()
+               if fact.entity_subject and fact.entity_subject not in ("Unknown", "")
+               else scope)
+
     return (
-        scope,
-        fact.fact_type,
+        subject,                                                          # per-product scope
+        fact.fact_type,                                                   # type boundary
+        fact.entity_type.casefold() if fact.entity_type else "general",  # person ≠ org
         fact.currency.casefold() if fact.currency else "unknown",
         fact.billing_period.casefold() if fact.billing_period else "unknown",
-        fact.offer_type.casefold() if fact.offer_type else "unknown"
+        fact.offer_type.casefold() if fact.offer_type else "unknown",
+        fact.price_qualifier.casefold() if fact.price_qualifier else "current",  # current ≠ original
     )
 
 def _contradictions(facts: Iterable[StructuredFact]) -> list[CandidateFinding]:

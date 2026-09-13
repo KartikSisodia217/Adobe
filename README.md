@@ -2,19 +2,31 @@
 
 The marketplace audits whether a brand is discoverable, understandable, trustworthy, and correctly represented across both its website and the wider web. It is read-only and recommend-only: it never signs in, submits a form, makes a purchase, or changes a live site.
 
-## Brand Identity / Conflicting Presence Audit
+## Cross-Web Brand Discovery & Conflicting Presence Audit
 
-The new `brand-identity-audit` skill asks whether users and AI systems can identify the official brand/source, distinguish it from stale or conflicting representations, and reach the current authoritative destination. It compares first-party signals (domain, canonical URL, Organization JSON-LD, `sameAs`, contact details and action links) with bounded public observations supplied to the audit. This makes it useful for any organization—not just courses.
+The `brand-identity-audit` skill evaluates whether users and AI systems can discover and verify the official brand/source, distinguish it from stale or conflicting representations across the web, and reach the authoritative destination.
 
-For example, if a business moves from a third-party course platform to its own domain but an observed old listing still sends purchasers elsewhere, the report can surface an evidence-backed **conflicting authoritative destination**. It does not call the old listing a scam or claim it is wrong; it records both sources and recommends explicit official-source clarity.
+Rather than relying solely on caller-provided sources, the engine performs **bounded, read-only cross-web discovery** (combining first-party outbound platform links, subdomain checks, and bounded public search queries). Discovered representations are categorized using an **evidence-backed classification taxonomy**:
+- `first-party`: Verified official domain, canonical host, or verified official social profiles (`sameAs`).
+- `historical first-party`: Predecessor domain or hosted platform that shares verified brand identity anchors (same creator, matching brand name, shared social handles) but lacks redirection or explicit official delegation.
+- `reseller`: Authorized partner or distributor offering products/services with explicit reseller affiliation.
+- `marketplace`: Multi-brand directory or storefront (e.g., Udemy, Amazon, Coursera).
+- `third-party`: External site reviewing, discussing, or referencing the brand.
+- `unknown`: External source with insufficient evidence for high-confidence classification.
 
-Example findings include:
+Example findings:
+- **Critical — Conflicting authoritative destination (B-01):** An observed historical platform or directory routes transactions or signups to a non-authoritative checkout host.
+- **High — Potentially stale or conflicting fact (B-02):** A public listing and official site publish different prices or availability for the same product/service.
+- **Medium — Same-name entity ambiguity (B-03):** Another domain presents the same brand name without authoritative identity anchors.
+- **Medium — Official-source clarity gap (B-04):** The official site lacks explicit authoritative statements while conflicting representations exist.
+- **High — Outdated platform representation (B-05):** A historical platform continues serving users without migration notices or 301 redirects to the authoritative domain.
 
-- **Critical — Conflicting authoritative destination:** an observed directory’s purchase link differs from the official site’s current purchase destination.
-- **High — Potentially stale or conflicting fact:** a public listing and the official site publish different prices or contact details for the same service.
-- **Medium — Same-name entity ambiguity:** another domain presents the same organization name without authoritative identity anchors.
-
-`external_sources` is optional JSON input for bounded, already-observed public evidence (`url`, optional `html`, `claims`, confidence, timestamp). The marketplace does not perform unbounded search or infer AI answers from search results.
+### Scoring Separation
+The audit strictly decouples identity metrics:
+- **First-party Identity Confidence:** Measures how clearly the authoritative site declares and structures its own identity.
+- **Cross-web Identity Confidence:** Evaluates cross-web consistency. High only when external representations have been evaluated and verified consistent. Defaults to 50 if unassessed.
+- **Source Consistency:** Deducts for conflicting destinations, stale prices, or unmigrated platforms.
+- **External Conflict Risk:** Escalates proportionally to detected cross-source conflicts.
 
 An **multi-skill agent audit system** designed to evaluate any website's **"AI Discoverability"** and **"On-Site Engagement"**. Built for the Adobe Hackathon Round 3, this tool helps brands understand why they are invisible to AI assistants (like ChatGPT, Claude, or Perplexity) and why visitors or automated agents bounce when they arrive on site.
 

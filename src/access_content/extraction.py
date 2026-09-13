@@ -85,7 +85,7 @@ def parse_json_ld_facts(html_content: str, url: str) -> Tuple[List[StructuredFac
         elif any(kind in {'Article', 'NewsArticle', 'FAQPage', 'BreadcrumbList'} for kind in item_types):
             if 'headline' in item:
                 facts.append(StructuredFact(fact_type="article_title", value=str(item['headline']), source="json_ld", page_url=HttpUrl(url)))
-        elif any(kind in {'Organization', 'Corporation', 'LocalBusiness', 'Person', 'WebSite'} for kind in item_types):
+        elif any(kind in {'Organization', 'Corporation', 'LocalBusiness', 'WebSite'} for kind in item_types):
             if 'sameAs' not in item:
                 proactive_findings.append(CandidateFinding(
                     detector_id="P-02",
@@ -97,7 +97,21 @@ def parse_json_ld_facts(html_content: str, url: str) -> Tuple[List[StructuredFac
                     page_urls=[HttpUrl(url)]
                 ))
             if 'name' in item:
-                facts.append(StructuredFact(fact_type="organization_name", value=str(item['name']), source="json_ld", page_url=HttpUrl(url)))
+                facts.append(StructuredFact(
+                    fact_type="organization_name", value=str(item['name']),
+                    source="json_ld", page_url=HttpUrl(url),
+                    entity_type="organization"
+                ))
+        elif any(kind == 'Person' for kind in item_types):
+            # Person entities are NOT organization names — model as person_name
+            # so Brand name vs Founder name is NEVER treated as a contradiction.
+            if 'name' in item:
+                facts.append(StructuredFact(
+                    fact_type="person_name", value=str(item['name']),
+                    source="json_ld", page_url=HttpUrl(url),
+                    entity_type="person",
+                    relationship="represented_by"
+                ))
             if 'url' in item:
                 facts.append(StructuredFact(fact_type="official_domain", value=str(item['url']), source="json_ld", page_url=HttpUrl(url)))
             if 'email' in item or 'telephone' in item:
@@ -148,43 +162,106 @@ def extract_facts_from_html(html_content: str, url: str, source: FactSource) -> 
             # We'll just call it article_title for simplicity if not product.
             facts.append(StructuredFact(fact_type="article_title", value=title, source=source, page_url=HttpUrl(url)))
             
-    # Extract prices with currency and optional billing period context
-    text = extract_html_text(html_content)
-    # Using a cleaner regex string for currencies
-    price_pattern = r'(\$|€|£|¥|₹|usd\s?|eur\s?|gbp\s?|jpy\s?|inr\s?)\s?(\d+(?:[.,]\d{1,2})?)(?:\s*(/month|/year|per month|per year|billed annually|billed monthly))?'
-    price_matches = re.finditer(price_pattern, text, re.IGNORECASE)
-    
-    h1_text = h1s[0].get_text(strip=True) if h1s else "Unknown"
-    
-    for match in price_matches:
+    # ── DOM-aware price extraction ────────────────────────────────────────────
+    # Price symbols that indicate struck-through / was-price nodes
+    _STRIKETHROUGH_TAGS = {"s", "del", "strike"}
+    _PROMO_WORDS = re.compile(r"\b(was|originally|save|discount|off|regular price|list price)\b", re.I)
+    _PERIOD_RE = re.compile(r"(month|year|annual)", re.I)
+    _PRICE_RE = re.compile(
+        r'(\$|€|£|¥|₹|usd\s*|eur\s*|gbp\s*|jpy\s*|inr\s?)\s?(\d+(?:[.,]\d{1,2})?)',
+        re.IGNORECASE
+    )
+    _CURRENCY_MAP = {"$": "usd", "€": "eur", "£": "gbp", "¥": "jpy", "₹": "inr"}
+    _SECTION_HEADS = ["h2", "h3", "h4"]
+
+    # Build a flat ordered list of (element, heading_text) tuples so each
+    # price node can be associated with the closest preceding section heading.
+    page_h1 = h1s[0].get_text(strip=True) if h1s else "Unknown"
+    body = soup.find("body") or soup
+
+    def _nearest_section_head(node) -> str:
+        """Walk up then backwards to find closest preceding h2/h3/h4."""
+        for parent in node.parents:
+            # Try siblings before this node inside each ancestor
+            for sib in parent.children:
+                if sib == node or sib == parent:
+                    break
+                if hasattr(sib, 'name') and sib.name in _SECTION_HEADS:
+                    text = sib.get_text(strip=True)
+                    if text:
+                        return text
+            if hasattr(parent, 'name') and parent.name in _SECTION_HEADS:
+                text = parent.get_text(strip=True)
+                if text:
+                    return text
+        return page_h1
+
+    def _billing_period(context_text: str) -> str:
+        m = _PERIOD_RE.search(context_text)
+        if not m:
+            return "one-time"
+        word = m.group(1).lower()
+        return "monthly" if word == "month" else "yearly"
+
+    def _is_strikethrough(node) -> bool:
+        """Return True if node or any ancestor signals a struck-through price."""
+        for parent in [node] + list(node.parents):
+            if hasattr(parent, 'name'):
+                if parent.name in _STRIKETHROUGH_TAGS:
+                    return True
+                classes = " ".join(parent.get("class", []))
+                if re.search(r"(strike|line.?through|original.?price|was.?price)", classes, re.I):
+                    return True
+        return False
+
+    seen_price_keys: set = set()
+    for tag in body.find_all(string=_PRICE_RE):
+        m = _PRICE_RE.search(str(tag))
+        if not m:
+            continue
         try:
-            currency_raw = match.group(1).strip().lower()
-            val = str(float(match.group(2).replace(',', '.')))
-            period_raw = (match.group(3) or "").strip().lower()
-            
-            # Normalize period
-            period = "one-time"
-            if "month" in period_raw:
-                period = "monthly"
-            elif "year" in period_raw or "annual" in period_raw:
-                period = "yearly"
-                
-            # Normalize currency
-            currency_map = {"$": "usd", "€": "eur", "£": "gbp", "¥": "jpy", "₹": "inr"}
-            currency = currency_map.get(currency_raw, currency_raw)
-                
-            facts.append(StructuredFact(
-                fact_type="price", 
-                value=val, 
-                source=source, 
-                page_url=HttpUrl(url),
-                currency=currency,
-                billing_period=period,
-                entity=h1_text
-            ))
+            currency_raw = m.group(1).strip().lower().rstrip()
+            val = str(float(m.group(2).replace(',', '.')))
         except ValueError:
-            pass
-            
+            continue
+
+        currency = _CURRENCY_MAP.get(currency_raw, currency_raw)
+        parent_node = tag.parent if hasattr(tag, 'parent') else None
+        if parent_node is None:
+            continue
+
+        # Determine qualifier: original/promotional or current
+        qualifier = "current"
+        if _is_strikethrough(parent_node):
+            qualifier = "original"
+        else:
+            surrounding = (parent_node.get_text(" ", strip=True) if hasattr(parent_node, 'get_text') else "")
+            if _PROMO_WORDS.search(surrounding):
+                qualifier = "promotional"
+
+        # Scope to nearest section heading to avoid lumping all products together
+        entity_subject = _nearest_section_head(parent_node)
+        # Context text around the price tag (up to 120 chars) for period detection
+        ctx = (parent_node.get_text(" ", strip=True) if hasattr(parent_node, 'get_text') else "")[:120]
+        period = _billing_period(ctx)
+
+        key = (entity_subject, val, currency, period, qualifier)
+        if key in seen_price_keys:
+            continue
+        seen_price_keys.add(key)
+
+        facts.append(StructuredFact(
+            fact_type="price",
+            value=val,
+            source=source,
+            page_url=HttpUrl(url),
+            currency=currency,
+            billing_period=period,
+            entity=page_h1,
+            entity_subject=entity_subject,
+            price_qualifier=qualifier,
+        ))
+
     return facts
 
 def check_schema_contradiction(raw_facts: List[StructuredFact], url: str) -> List[CandidateFinding]:
