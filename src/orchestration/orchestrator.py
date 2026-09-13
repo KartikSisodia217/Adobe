@@ -73,14 +73,43 @@ async def execute_audit(input_url: str, external_sources: list[dict] | None = No
         structured_facts = []
         try:
             for cand in render_cands:
+                render_data = None
                 try:
                     await b_host.start(str(context.target_url))
-                    html, a11y = await b_host.render_page(str(cand.url), cand.page_role)
-                    if html:
-                        context.rendered_pages.append(RenderedPage(url=cand.url, page_role=cand.page_role, rendered_html=html, accessibility_tree=a11y))
-                        context.budgets_consumed["pages_rendered"] += 1
+                    render_data = await b_host.render_page(str(cand.url), cand.page_role)
+                    if render_data and render_data.get("rendered_html"):
+                        html = render_data["rendered_html"]
+                        a11y = render_data.get("accessibility_tree", {})
+                        raw_matching = next((p for p in context.raw_pages if str(p.url) == str(cand.url)), None)
+                        if raw_matching:
+                            rp = RenderedPage(
+                                **raw_matching.model_dump(),
+                                accessibility_tree=a11y,
+                                rendered_html=html
+                            )
+                            context.rendered_pages.append(rp)
+                            context.budgets_consumed["pages_rendered"] += 1
+                        
+                        # 16-17. Engagement (Immediate, uses live page)
+                        if render_data.get("page"):
+                            try:
+                                adapter = create_adapter(render_data["page"], a11y)
+                                ef = await run_interactive_tests(adapter, context)
+                                raw_findings.extend(ef)
+                            except Exception as e:
+                                context.record_limitation(f"Engagement eval failed for {rp.url}: {e}")
+                            finally:
+                                if 'adapter' in locals() and hasattr(adapter, 'stop'):
+                                    await adapter.stop()
+                                
                 except Exception as e:
                     context.record_limitation(f"Failed to render {cand.url}: {e}")
+                finally:
+                    if render_data and render_data.get("page"):
+                        try:
+                            await render_data["page"].close()
+                        except Exception:
+                            pass
             
             # 14. Access Content (Phase 10: Role-aware detectors)
             ac_facts, ac_findings = run_access_content_audit(context)
@@ -91,17 +120,6 @@ async def execute_audit(input_url: str, external_sources: list[dict] | None = No
             fi_findings = await run_fact_integrity(context, structured_facts)
             raw_findings.extend(fi_findings)
             raw_findings.extend(run_brand_identity_audit(context))
-            
-            # 16-17. Engagement
-            for rp in context.rendered_pages:
-                try:
-                    adapter = create_adapter(b_host.page, rp.accessibility_tree)
-                    ef = await run_interactive_tests(adapter, context)
-                    raw_findings.extend(ef)
-                    if hasattr(adapter, 'stop'):
-                        await adapter.stop()
-                except Exception as e:
-                    context.record_limitation(f"Engagement eval failed for {rp.url}: {e}")
             
         finally:
             await b_host.cleanup()

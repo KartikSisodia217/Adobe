@@ -1,12 +1,46 @@
 {
-    "site_architecture_coverage": "100%",
-    "role_coverage": "100%",
-    "template_coverage": "100%",
-    "holdout_precision": "1.0",
-    "holdout_recall": "1.0",
-    "holdout_f1": "1.0",
-    "false_positive_rate": "0.0",
-    "sample_efficiency": "High",
-    "runtime": "2m30s",
-    "coverage_score": 100
+  "development": {
+    "precision": null,
+    "recall": null,
+    "f1": null
+  },
+  "holdout": {
+    "precision": 0.3333333333333333,
+    "recall": 0.1111111111111111,
+    "f1": 0.16666666666666666
+  },
+  "site_architecture_coverage": [
+    "d01_unusual_robots",
+    "g03_nav_404",
+    "g02_non_blocking",
+    "g02_focus_trap",
+    "g03_spa_nav",
+    "f03_clear",
+    "d02_diff_products",
+    "e02_decorative",
+    "e01_render_only",
+    "g03_trad_nav",
+    "d02_monthly_annual",
+    "d02_variants",
+    "stale_claim",
+    "d02_same_entity",
+    "e02_factual_non_text",
+    "f03_ambiguous",
+    "g02_true_modal",
+    "deep_architecture",
+    "clean_site",
+    "e01_hydrated_present"
+  ],
+  "role_coverage": [
+    "detail",
+    "landing",
+    "contact",
+    "unknown"
+  ],
+  "template_coverage": [
+    "unknown_template"
+  ],
+  "sample_efficiency": "dynamically_measured",
+  "runtime": 63.52971291542053,
+  "limitations": []
 }

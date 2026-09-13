@@ -1,0 +1,4 @@
+User-agent: OAI-SearchBot
+Crawl-delay: 10
+Disallow: /private
+Disallow: /
