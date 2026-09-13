@@ -38,19 +38,6 @@ def parse_json_ld_facts(html_content: str, url: str) -> Tuple[List[StructuredFac
         item_types = item.get('@type', '')
         item_types = item_types if isinstance(item_types, list) else [item_types]
         if any(kind in {'Product', 'Course'} for kind in item_types):
-            # Proactive Schema Validation
-            missing_props = [p for p in ['description', 'image', 'sku'] if p not in item]
-            if missing_props:
-                proactive_findings.append(CandidateFinding(
-                    detector_id="P-01",
-                    mechanism="schema optimization",
-                    confidence="high",
-                    affected_entity="Product Schema",
-                    evidence_items=[{"missing_properties": missing_props}],
-                    category="discoverability",
-                    page_urls=[HttpUrl(url)]
-                ))
-                
             product_name = str(item.get('name', 'Unknown'))
             if 'name' in item:
                 facts.append(StructuredFact(fact_type="product_name", value=product_name, source="json_ld", page_url=HttpUrl(url)))
@@ -86,16 +73,6 @@ def parse_json_ld_facts(html_content: str, url: str) -> Tuple[List[StructuredFac
             if 'headline' in item:
                 facts.append(StructuredFact(fact_type="article_title", value=str(item['headline']), source="json_ld", page_url=HttpUrl(url)))
         elif any(kind in {'Organization', 'Corporation', 'LocalBusiness', 'Person', 'WebSite'} for kind in item_types):
-            if 'sameAs' not in item:
-                proactive_findings.append(CandidateFinding(
-                    detector_id="P-02",
-                    mechanism="entity authority and citation resilience",
-                    confidence="high",
-                    affected_entity="Organization Schema",
-                    evidence_items=[{"missing_property": "sameAs", "description": "No authoritative external corroboration linked."}],
-                    category="discoverability",
-                    page_urls=[HttpUrl(url)]
-                ))
             if 'name' in item:
                 facts.append(StructuredFact(fact_type="organization_name", value=str(item['name']), source="json_ld", page_url=HttpUrl(url)))
             if 'url' in item:
@@ -326,7 +303,7 @@ def check_non_text_trap(rendered_html: str, url: str) -> List[CandidateFinding]:
     findings = []
     
     # Patterns that indicate decorative/non-informational images
-    _decorative_patterns = re.compile(r'(logo|icon|placeholder|banner|hero|bg|background|sprite|spacer|pixel|tracking)', re.I)
+    _decorative_patterns = re.compile(r'(logo|icon|placeholder|banner|hero|bg|background|sprite|spacer|pixel|tracking|avatar|thumb|divider|pattern|decor|illustration|promo)', re.I)
     
     for img in soup.find_all('img'):
         parent = img.find_parent(['main', 'article', 'figure'])

@@ -102,7 +102,7 @@ def _contradictions(facts: Iterable[StructuredFact]) -> list[CandidateFinding]:
 
 def _generic_identity(value: str) -> bool:
     normal = _normalise(value, "organization_name")
-    return normal in _GENERIC_IDENTITIES or len(normal) < 4 or normal.startswith(("the company", "our "))
+    return normal in _GENERIC_IDENTITIES or normal.startswith(("the company", "our company"))
 
 
 async def _wikidata_search(query: str) -> list[dict]:
@@ -123,8 +123,9 @@ async def _entity_ambiguity(context: AuditContext, facts: list[StructuredFact],
     generic = all(_generic_identity(fact.value) for fact in identities)
     lacks_same_as = not any("sameas" in fact.value.casefold() for fact in identities)
     contradictory = any(f.affected_entity == "organization_name" for f in contradictions)
-    if not generic and len(distinct) == 1:
+    if not generic and len(distinct) <= 1:
         return []
+        
     evidence = [{"value": fact.value, "source": fact.source, "page_url": str(fact.page_url)} for fact in identities]
     urls = list(dict.fromkeys(fact.page_url for fact in identities))
     findings = [_finding("F-03", "ambiguous-first-party-identity", "organization identity", evidence, urls, "medium")]

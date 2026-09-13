@@ -177,3 +177,19 @@ tests/                        # Test suite
 ## 14. Hackathon Submission
 
 This repository is structured as an Agent Skill Marketplace with a marketplace manifest (`marketplace.json`), four distinct skills (`audit-orchestrator` and three detectors), one designated entrypoint, reusable focused auditors, and machine-readable final output.
+
+## Generalization & Coverage
+
+AIMLESS is designed to audit arbitrary public websites rather than relying on a fixed website template or structure.
+
+- **Candidate Discovery**: Uses multiple signals to discover relevant candidate pages, including structural links (homepage, navigation, landmarks), sitemap directives discovered via `robots.txt`, and BFS exploration bounded by a configurable depth.
+- **Robust Selectors & Roles**: Does not rely on rigid CSS selectors or limited regex. Page roles are semantically inferred by analyzing URL patterns, accessibility trees, breadcrumbs, JSON-LD, and page metadata, supporting standard sites, SPAs, and e-commerce apps alike.
+- **Fact Extraction**: Compare raw and rendered content logically. Extracted facts like prices and availability use fuzzy token-set ratios and synonym mapping rather than brittle exact string matching. Missing optional metadata is treated as a learning opportunity, not a defect.
+- **Engagement Auditing**: Interaction and navigation are tested via Playwright's accessibility tree, ensuring semantic buttons, links, icon-controls, and custom elements with `aria-label` are handled properly. Modals are tested for genuine focus trapping without assuming fixed HTML landmarks.
+- **Configurable Generalization Parameters**: You can now pass configuration to the `execute_audit` entrypoint to tune generalization limits without compromising safety:
+  - `max_raw_cap`: Maximum pages fetched in raw HTML phase (default 15).
+  - `max_render_cap`: Maximum pages loaded in headless browser (default 5).
+  - `max_bfs_depth`: How deep the link discovery exploration goes (default 5).
+  - `timeout`: Global audit timeout in seconds (default 180.0).
+
+These generalization improvements ensure AIMLESS provides reliable, evidence-based findings across diverse real-world websites.

@@ -25,7 +25,7 @@ def _is_same_registrable_domain(url1: str, url2: str) -> bool:
         
     return get_registrable(host1) == get_registrable(host2)
 
-async def discover_candidates(homepage_url: str, fetcher: RawFetcher) -> tuple[RawPage, set, list]:
+async def discover_candidates(homepage_url: str, fetcher: RawFetcher, max_bfs_depth: int = 5, robots_txt: str = "") -> tuple[RawPage, set, list]:
     # 1. Fetch homepage
     try:
         homepage_raw = await fetcher.fetch_page(homepage_url, page_role="landing")
@@ -38,7 +38,7 @@ async def discover_candidates(homepage_url: str, fetcher: RawFetcher) -> tuple[R
     # BFS Queue
     queue = [homepage_raw]
     visited = {str(homepage_raw.url)}
-    max_bfs_depth = 5 # Fetch up to 5 additional pages to discover more links
+    # max_bfs_depth is now an argument
     
     while queue and max_bfs_depth > 0:
         current_page = queue.pop(0)
@@ -72,8 +72,16 @@ async def discover_candidates(homepage_url: str, fetcher: RawFetcher) -> tuple[R
     sitemap_url = f"{parsed_home.scheme}://{parsed_home.netloc}/sitemap.xml"
     sitemap_index_url = f"{parsed_home.scheme}://{parsed_home.netloc}/sitemap_index.xml"
     
+    sitemap_urls_to_check = [sitemap_url, sitemap_index_url]
+    if robots_txt:
+        for line in robots_txt.splitlines():
+            if line.lower().startswith("sitemap:"):
+                sm_url = line.split(":", 1)[1].strip()
+                if sm_url not in sitemap_urls_to_check:
+                    sitemap_urls_to_check.append(sm_url)
+    
     sitemap_content = None
-    for s_url in [sitemap_url, sitemap_index_url]:
+    for s_url in sitemap_urls_to_check:
         try:
             s_page = await fetcher.fetch_page(s_url, page_role="unknown")
             if s_page.status_code == 200 and s_page.html_content:

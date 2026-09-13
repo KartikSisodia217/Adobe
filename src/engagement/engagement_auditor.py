@@ -93,12 +93,16 @@ async def _navigation(browser: BrowserAdapter, tree: dict, context: AuditContext
     original_url = await browser.get_url()
     
     for node, parents in _walk(tree):
-        if str(node.get("role", "")).casefold() != "link" or not _text(node):
+        role = str(node.get("role", "")).casefold()
+        if role not in {"link", "button", "menuitem"} or not _text(node):
             continue
-        if "navigation" not in {str(p.get("role", "")).casefold() for p in parents} and not node.get("is_primary"):
+        
+        # Only interact with things that are explicitly in navigation, or are primary, or are links
+        if "navigation" not in {str(p.get("role", "")).casefold() for p in parents} and not node.get("is_primary") and role != "link":
             continue
+            
         try:
-            await browser.click("link", _text(node))
+            await browser.click(role, _text(node))
             
             # Verify actual URL transition OR DOM transition AND destination health
             new_url = await browser.get_url()

@@ -111,7 +111,6 @@ def create_adapter(page, accessibility_tree: Dict[str, Any]) -> BrowserAdapter:
     # We will attach the cleanup to the page close or handle it externally.
     # We can patch the adapter with a stop method that the orchestrator calls.
     adapter = BrowserAdapter(accessibility_tree, queue)
-    adapter._actor_task = task
     
     async def stop_actor():
         fut = asyncio.Future()
@@ -119,5 +118,4 @@ def create_adapter(page, accessibility_tree: Dict[str, Any]) -> BrowserAdapter:
         await fut
         await task
 
-    adapter.stop = stop_actor
-    return adapter
+    return adapter, stop_actor

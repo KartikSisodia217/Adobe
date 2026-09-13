@@ -12,25 +12,23 @@ def infer_role(url: str, anchor_text: str = "") -> PageRole:
         
     anchor = anchor_text.lower()
     
-    # Semantic inference based on anchor and path
-    if "blog" in anchor or "news" in anchor or re.search(r'(blog|news|article|insights)', path):
+    if "blog" in anchor or "news" in anchor or re.search(r'(blog|news|article|insights|update|press)', path):
         if len(path.split("/")) > 2 or "-" in path.split("/")[-1]:
             return "editorial"
         return "index"
         
-    if "contact" in anchor or "about us" in anchor or re.search(r'(contact|about)', path):
+    if re.search(r'(contact|about|team|help|support|faq)', anchor) or re.search(r'(contact|about|team|help|support|faq)', path):
         return "contact"
         
     if "price" in anchor or "pricing" in anchor or "plan" in anchor or "pricing" in path:
-        return "detail" # Treat pricing as detail for fact extraction
-        
-    if re.search(r'(product|item|p/|service|solution)', path) or "buy" in anchor or "shop" in anchor:
         return "detail"
         
-    if path.endswith("s") or path.endswith("s/") or "all" in anchor or "browse" in anchor:
+    if re.search(r'(product|item|p/|service|solution|feature|docs|course|event|menu)', path) or re.search(r'(buy|shop|register|book|menu)', anchor):
+        return "detail"
+        
+    if path.endswith("s") or path.endswith("s/") or "all" in anchor or "browse" in anchor or re.search(r'(category|collections|list)', path):
         return "index"
         
-    # Fallback to detail if structural cues suggest a specific resource (UUID/Slug)
     if "-" in path.split("/")[-1] or re.search(r'\d+', path.split("/")[-1]):
         return "detail"
         
@@ -131,23 +129,23 @@ def refine_page_roles(raw_pages: List[RawPage]) -> None:
             elif ctype in ('article', 'og:article'): is_article = True
             
         # 3. Breadcrumbs & CTA Semantics
-        nav_text = " ".join([nav.get_text() for nav in soup.find_all(['nav', 'div'], class_=re.compile(r'breadcrumb', re.I))]).lower()
-        cta_text = " ".join([a.get_text() for a in soup.find_all(['a', 'button'], class_=re.compile(r'btn|button|cta', re.I))]).lower()
-        if 'add to cart' in cta_text or 'buy now' in cta_text or 'checkout' in cta_text:
+        nav_text = " ".join([nav.get_text() for nav in soup.find_all(['nav', 'div', 'ul'], class_=re.compile(r'breadcrumb|nav|menu', re.I))]).lower()
+        cta_text = " ".join([a.get_text() for a in soup.find_all(['a', 'button', 'input'], class_=re.compile(r'btn|button|cta|submit', re.I))]).lower()
+        if re.search(r'(add to cart|buy now|checkout|register|book|enroll|get started)', cta_text):
             is_product = True
             
         # 4. Structural patterns (Link density & Repeated Cards)
         # If there are many identical card-like elements, it's likely an index/listing page
-        cards = soup.find_all(class_=re.compile(r'card|item|grid|list', re.I))
+        cards = soup.find_all(class_=re.compile(r'card|item|grid|list|row|col', re.I))
         if len(cards) > 6 and not is_product and not is_article:
             is_index = True
             
         # 5. Semantic text signals
-        if 'contact us' in title or 'get in touch' in h1s or 'support' in title:
+        if re.search(r'(contact us|get in touch|support|help|faq)', title) or re.search(r'(get in touch|support|help|faq)', h1s):
             is_contact = True
-        elif 'blog' in title or 'news' in title or 'article' in title or 'read more' in nav_text:
+        elif re.search(r'(blog|news|article|update)', title) or 'read more' in nav_text:
             is_article = True
-        elif 'price' in title or 'shop' in title:
+        elif 'price' in title or 'shop' in title or 'docs' in title:
             is_product = True
             
         # Apply semantic roles

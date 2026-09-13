@@ -26,7 +26,8 @@ from src.fusion.scoring import assign_severity_and_confidence
 from src.fusion.cap import cap_findings
 from src.reporting.report_builder import build_report, build_minimal_error_report
 
-async def execute_audit(input_url: str) -> dict:
+async def execute_audit(input_url: str, config: dict = None) -> dict:
+    if config is None: config = {}
     start_time = time.monotonic()
     
     async def _do_audit() -> dict:
@@ -45,6 +46,7 @@ async def execute_audit(input_url: str) -> dict:
 
         # 4. Context
         context = build_context(norm_url)
+        context.config = config
         fetcher = RawFetcher()
         raw_findings = []
         structured_facts = []
@@ -54,11 +56,11 @@ async def execute_audit(input_url: str) -> dict:
             await retrieve_robots_txt(context, fetcher)
             
             # 6-7. Discover
-            homepage_raw, discovered, sitemaps = await discover_candidates(norm_url, fetcher)
+            homepage_raw, discovered, sitemaps = await discover_candidates(norm_url, fetcher, max_bfs_depth=config.get("max_bfs_depth", 5), robots_txt=context.robots_txt_content)
             context.raw_pages.append(homepage_raw)
             context.budgets_consumed["raw_pages_fetched"] += 1
             # 8. Select and Fetch Raw Candidates
-            raw_cands = select_raw_candidates(str(homepage_raw.url), discovered, sitemaps)
+            raw_cands = select_raw_candidates(str(homepage_raw.url), discovered, sitemaps, max_raw_cap=config.get("max_raw_cap", 15))
             
             tasks = []
             for cand in raw_cands:
@@ -78,7 +80,7 @@ async def execute_audit(input_url: str) -> dict:
             refine_page_roles(context.raw_pages)
             
             # 10. Select Render Candidates
-            render_cands = select_render_candidates(context.raw_pages)
+            render_cands = select_render_candidates(context.raw_pages, max_render_cap=config.get("max_render_cap", 5))
             
         finally:
             await fetcher.close()
@@ -103,7 +105,7 @@ async def execute_audit(input_url: str) -> dict:
                     context.budgets_consumed["pages_rendered"] += 1
                     
                     # 14. M3 Engagement
-                    adapter = create_adapter(render_data["page"], render_data["accessibility_tree"])
+                    adapter, stop_actor = create_adapter(render_data["page"], render_data["accessibility_tree"])
                     try:
                         # Invoke M3
                         m3_eng_findings = await run_interactive_tests(adapter, context)
@@ -143,19 +145,19 @@ async def execute_audit(input_url: str) -> dict:
         deduped = deduplicate_findings(norm_findings)
         cross = cross_validate_findings(deduped, context)
         scored = assign_severity_and_confidence(cross)
-        final_findings, proactive = cap_findings(scored)
+        final_findings, proactive, stats = cap_findings(scored)
 
         # 22-23. Report Generation
         context.budgets_consumed["runtime_ms"] = int((time.monotonic() - start_time) * 1000)
-        report = build_report(context, final_findings, proactive)
+        report = build_report(context, final_findings, proactive, stats)
         
         logger.info("Audit complete", extra={"phase": "report_generation", "budget_consumption": context.budgets_consumed})
         return report.model_dump(mode='json')
 
     try:
-        return await asyncio.wait_for(_do_audit(), timeout=180.0)
+        return await asyncio.wait_for(_do_audit(), timeout=config.get("timeout", 180.0))
     except asyncio.TimeoutError:
-        return build_minimal_error_report(input_url, "Global 180s timeout exceeded").model_dump(mode='json')
+        return build_minimal_error_report(input_url, f"Global {config.get('timeout', 180.0)}s timeout exceeded").model_dump(mode='json')
     except Exception as e:
         # Fallback for unexpected bugs
-        return build_minimal_error_report(input_url, f"Unexpected error: {str(e)}").model_dump(mode='json')
+        return build_minimal_error_report(input_url, f"Unexpected error: {str(e)}\n{__import__("traceback").format_exc()}").model_dump(mode='json')
