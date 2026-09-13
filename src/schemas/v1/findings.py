@@ -3,7 +3,7 @@ from pydantic import BaseModel, HttpUrl
 
 ConfidenceLevel = Literal["low", "medium", "high"]
 SeverityLevel = Literal["critical", "high", "medium", "low"]
-CategoryType = Literal["discoverability", "engagement", "content-extractability"]
+CategoryType = Literal["discoverability", "engagement", "content-extractability", "brand-identity"]
 
 class CandidateFinding(BaseModel):
     detector_id: str
@@ -19,6 +19,7 @@ class SuggestedAction(BaseModel):
     priority: SeverityLevel
     mechanism: Optional[str] = None
     verification: Optional[str] = None
+    steps: List[str] = []
 
 class FinalFinding(BaseModel):
     id: str
@@ -32,3 +33,5 @@ class FinalFinding(BaseModel):
     confidence: Optional[ConfidenceLevel] = None
     why_it_matters: Optional[str] = None
     detector_id: Optional[str] = None
+    sources: Optional[List[Dict[str, Any]]] = None
+    risk: Optional[str] = None

@@ -1,5 +1,21 @@
 # AIMLESS: AI-Readiness & Engagement Auditor
 
+The marketplace audits whether a brand is discoverable, understandable, trustworthy, and correctly represented across both its website and the wider web. It is read-only and recommend-only: it never signs in, submits a form, makes a purchase, or changes a live site.
+
+## Brand Identity / Conflicting Presence Audit
+
+The new `brand-identity-audit` skill asks whether users and AI systems can identify the official brand/source, distinguish it from stale or conflicting representations, and reach the current authoritative destination. It compares first-party signals (domain, canonical URL, Organization JSON-LD, `sameAs`, contact details and action links) with bounded public observations supplied to the audit. This makes it useful for any organization—not just courses.
+
+For example, if a business moves from a third-party course platform to its own domain but an observed old listing still sends purchasers elsewhere, the report can surface an evidence-backed **conflicting authoritative destination**. It does not call the old listing a scam or claim it is wrong; it records both sources and recommends explicit official-source clarity.
+
+Example findings include:
+
+- **Critical — Conflicting authoritative destination:** an observed directory’s purchase link differs from the official site’s current purchase destination.
+- **High — Potentially stale or conflicting fact:** a public listing and the official site publish different prices or contact details for the same service.
+- **Medium — Same-name entity ambiguity:** another domain presents the same organization name without authoritative identity anchors.
+
+`external_sources` is optional JSON input for bounded, already-observed public evidence (`url`, optional `html`, `claims`, confidence, timestamp). The marketplace does not perform unbounded search or infer AI answers from search results.
+
 An **multi-skill agent audit system** designed to evaluate any website's **"AI Discoverability"** and **"On-Site Engagement"**. Built for the Adobe Hackathon Round 3, this tool helps brands understand why they are invisible to AI assistants (like ChatGPT, Claude, or Perplexity) and why visitors or automated agents bounce when they arrive on site.
 
 ## Key Features
@@ -38,6 +54,7 @@ graph TD
 
     M2 --> Fusion["Fusion Engine"]
     M3 --> Fusion
+    Identity["Brand Identity Audit"] --> Fusion
 
     subgraph FusionEngine ["Fusion & Reporting"]
         Fusion --> Dedupe["Deduplication"]
@@ -136,6 +153,10 @@ PYTHONPATH="." python -m pytest tests/
    * Instead of brittle Regex, relies on standard `difflib` token-set heuristics to semantically map unstructured DOM facts to structured `JSON-LD` facts (e.g. mapping `"$39,990"` directly to `"39990.00"`).
 4. **Active Focus Trap Breaker**
    * Dynamically injects keystrokes (`Escape`) and utilizes visual tree traversal to test if modals, cookie walls, or popups completely disable the accessibility tree for automated systems.
+5. **Identity and source consistency**
+   * Normalizes official-domain, organization, structured-data, destination and observed public-source claims; reports conflicts only where the evidence supports them.
+6. **Deterministic readiness scores**
+   * The report includes AI discoverability, content extractability, entity clarity, brand identity confidence, source consistency, on-site orientation, and overall readiness scores. They are transparent summaries of evidence-backed findings, not a substitute for findings.
 
 ---
 
@@ -155,6 +176,7 @@ Our heuristic detectors are not theoretically derived; they are mapped directly 
 * **Non-Destructive:** The auditor explicitly blocks form submission (`POST`/`PUT`) and disables arbitrary file downloading.
 * **Bounded Execution:** Strict 180-second timeout budget per run, monitored globally by the Orchestrator.
 * **SSRF Protection:** Resolves and rejects private CIDR blocks, localhost traversal, and `file://` local read attacks.
+* **Robots and rate safety:** Fetching is bounded, respects robots.txt, uses only public GET access, and does not perform rate-abusive external discovery.
 
 ## 📄 License
 MIT License. Created for the Adobe Hackathon.

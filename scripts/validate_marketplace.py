@@ -9,7 +9,7 @@ def main():
         print("ERROR: marketplace.json not found")
         sys.exit(1)
         
-    with open("marketplace.json") as f:
+    with open("marketplace.json", encoding="utf-8") as f:
         try:
             manifest = json.load(f)
         except json.JSONDecodeError:
@@ -42,7 +42,7 @@ def main():
             print(f"ERROR: SKILL.md missing in {path}")
             sys.exit(1)
             
-        with open(skill_md) as smd:
+        with open(skill_md, encoding="utf-8") as smd:
             content = smd.read()
             if not content.startswith("---"):
                 print(f"ERROR: Missing YAML frontmatter in {skill_md}")

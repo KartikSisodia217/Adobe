@@ -17,6 +17,7 @@ from src.schemas.v1 import RenderedPage, AuditReport, Summary, Coverage
 
 from src.access_content.auditor import run_access_content_audit
 from src.fact_integrity.auditor import run_fact_integrity
+from src.brand_identity.auditor import run_brand_identity_audit
 from src.engagement.engagement_auditor import run_interactive_tests
 
 from src.fusion.normalize import normalize_findings
@@ -26,7 +27,7 @@ from src.fusion.scoring import assign_severity_and_confidence
 from src.fusion.cap import cap_findings
 from src.reporting.report_builder import build_report, build_minimal_error_report
 
-async def execute_audit(input_url: str) -> dict:
+async def execute_audit(input_url: str, external_sources: list[dict] | None = None) -> dict:
     start_time = time.monotonic()
     
     async def _do_audit() -> dict:
@@ -45,6 +46,7 @@ async def execute_audit(input_url: str) -> dict:
 
         # 4. Context
         context = build_context(norm_url)
+        context.external_sources = external_sources or []
         fetcher = RawFetcher()
         raw_findings = []
         structured_facts = []
@@ -139,6 +141,7 @@ async def execute_audit(input_url: str) -> dict:
             
             m3_fact_findings = await run_fact_integrity(context, structured_facts)
             raw_findings.extend(m3_fact_findings)
+            raw_findings.extend(run_brand_identity_audit(context))
         except Exception as e:
             context.record_limitation(f"M2/M3 failed: {e}")
 
