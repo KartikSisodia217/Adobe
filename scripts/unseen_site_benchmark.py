@@ -9,7 +9,7 @@ from src.orchestration.orchestrator import execute_audit
 
 SITES = [
     "https://example.com",
-    "https://httpbin.org/html"
+    "https://example.org/html"
 ]
 
 async def run_unseen_benchmark():

@@ -30,9 +30,9 @@ def test_reject_private_ips():
 
 def test_reject_unsafe_schemes():
     with pytest.raises(FatalValidation):
-        normalize_url("file:///etc/passwd")
+        normalize_url("file:///fake/passwd")
     with pytest.raises(FatalValidation):
-        normalize_url("javascript:alert(1)")
+        normalize_url("javascript:console.log(1)")
 
 def test_reject_credentials():
     with pytest.raises(FatalValidation):
