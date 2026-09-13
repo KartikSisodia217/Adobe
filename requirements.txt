@@ -6,3 +6,6 @@ lxml>=4.9.0
 chardet>=5.2.0
 brotli>=1.1.0
 playwright-stealth>=2.0.3
+extruct>=0.14.0
+thefuzz>=0.20.0
+python-Levenshtein>=0.23.0

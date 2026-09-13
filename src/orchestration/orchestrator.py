@@ -10,7 +10,7 @@ from src.security.ssrf_guard import resolve_and_validate
 from src.fetching.raw_fetcher import RawFetcher
 from src.robots.robots_gate import retrieve_robots_txt
 from src.sampling.discovery import discover_candidates
-from src.sampling.candidate_selection import select_candidates
+from src.sampling.candidate_selection import select_raw_candidates, select_render_candidates, refine_page_roles
 from src.browser.browser_host import BrowserHost
 from src.browser.browser_adapter import BrowserAdapter, create_adapter
 from src.schemas.v1 import RenderedPage, AuditReport, Summary, Coverage
@@ -57,11 +57,9 @@ async def execute_audit(input_url: str) -> dict:
             homepage_raw, discovered, sitemaps = await discover_candidates(norm_url, fetcher)
             context.raw_pages.append(homepage_raw)
             context.budgets_consumed["raw_pages_fetched"] += 1
+            # 8. Select and Fetch Raw Candidates
+            raw_cands = select_raw_candidates(str(homepage_raw.url), discovered, sitemaps)
             
-            # 8-9. Candidate Selection
-            raw_cands, render_cands = select_candidates(homepage_raw, discovered, sitemaps)
-            
-            # 10. Raw Fetch Rest
             tasks = []
             for cand in raw_cands:
                 if cand["url"] == str(homepage_raw.url):
@@ -75,6 +73,13 @@ async def execute_audit(input_url: str) -> dict:
                 else:
                     context.raw_pages.append(res)
                     context.budgets_consumed["raw_pages_fetched"] += 1
+                    
+            # 9. Refine roles based on DOM content
+            refine_page_roles(context.raw_pages)
+            
+            # 10. Select Render Candidates
+            render_cands = select_render_candidates(context.raw_pages)
+            
         finally:
             await fetcher.close()
 
@@ -87,27 +92,24 @@ async def execute_audit(input_url: str) -> dict:
             for r_cand in render_cands:
                 render_data = None
                 try:
-                    render_data = await host.render_page(r_cand)
+                    render_data = await host.render_page(str(r_cand.url), r_cand.page_role)
                     
-                    # Find matching raw page
-                    raw_matching = next((p for p in context.raw_pages if str(p.url) == r_cand["url"]), None)
-                    if raw_matching:
-                        r_page = RenderedPage(
-                            **raw_matching.model_dump(),
-                            accessibility_tree=render_data["accessibility_tree"],
-                            rendered_html=render_data["rendered_html"]
-                        )
-                        context.rendered_pages.append(r_page)
-                        context.budgets_consumed["pages_rendered"] += 1
-                        
-                        # 14. M3 Engagement
-                        adapter = create_adapter(render_data["page"], render_data["accessibility_tree"])
-                        try:
-                            # Invoke M3
-                            m3_eng_findings = await run_interactive_tests(adapter, context)
-                            raw_findings.extend(m3_eng_findings)
-                        except Exception as e:
-                            context.record_limitation(f"M3 engagement failed on {r_cand['url']}: {e}")
+                    r_page = RenderedPage(
+                        **r_cand.model_dump(),
+                        accessibility_tree=render_data["accessibility_tree"],
+                        rendered_html=render_data["rendered_html"]
+                    )
+                    context.rendered_pages.append(r_page)
+                    context.budgets_consumed["pages_rendered"] += 1
+                    
+                    # 14. M3 Engagement
+                    adapter = create_adapter(render_data["page"], render_data["accessibility_tree"])
+                    try:
+                        # Invoke M3
+                        m3_eng_findings = await run_interactive_tests(adapter, context)
+                        raw_findings.extend(m3_eng_findings)
+                    except Exception as e:
+                        context.record_limitation(f"M3 engagement failed on {str(r_cand.url)}: {e}")
                             
                 except RecoverableError as e:
                     context.record_limitation(str(e))
