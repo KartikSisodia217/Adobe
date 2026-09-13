@@ -40,6 +40,7 @@ class MockAdapter:
         return (self.trace or ["modal-button"] * max_steps)[:max_steps]
     async def is_primary_route_blocked(self): return self.state["blocked"]
     async def get_url(self): return self.state["url"]
+    async def get_html(self): return "<html>state:" + self.state["url"] + "</html>"
     async def is_destination_healthy(self): return True
 
 def adapter(tree, *, blocked=False, click_error=False, close_on_escape=False, close_on_click=False, trace=None, click_changes_url=True):
