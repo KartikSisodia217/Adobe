@@ -13,6 +13,7 @@ class Summary(BaseModel):
     low: int
     proactive_suggestions: int
     narrative: Optional[str] = None
+    scores: Dict[str, int] = Field(default_factory=dict)
 
 class ExternalCalls(BaseModel):
     wikidata: int = 0
@@ -42,3 +43,4 @@ class AuditReport(BaseModel):
     coverage: Coverage
     findings: List[FinalFinding]
     proactive_suggestions: List[ProactiveSuggestion]
+    query_simulation: List[Dict] = Field(default_factory=list)

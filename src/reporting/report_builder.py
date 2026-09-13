@@ -2,6 +2,28 @@ from datetime import datetime, timezone
 from typing import List, Dict
 from src.schemas.v1 import AuditContext, FinalFinding, ProactiveSuggestion, AuditReport, Summary, Coverage, ExternalCalls
 
+def calculate_scores(findings: List[FinalFinding], context: AuditContext | None = None) -> Dict[str, int]:
+    """Deterministic 0-100 summary scores; findings remain the source of truth."""
+    penalties = {"critical": 28, "high": 16, "medium": 8, "low": 3}
+    groups = {
+        "ai_discoverability": {"discoverability", "content-extractability", "brand-identity"},
+        "content_extractability": {"content-extractability"},
+        "entity_clarity": {"brand-identity"},
+        "brand_identity_confidence": {"brand-identity"},
+        "source_consistency": {"brand-identity"},
+        "on_site_orientation": {"engagement", "brand-identity"},
+    }
+    scores = {}
+    for name, categories in groups.items():
+        deduction = sum(penalties[f.severity] for f in findings if f.category in categories)
+        scores[name] = max(0, 100 - deduction)
+    # Absence of cross-web evidence is uncertainty, not proof of identity clarity.
+    external_checked = bool(context and context.external_sources)
+    scores["cross_web_identity_confidence"] = scores["brand_identity_confidence"] if external_checked else 50
+    scores["external_conflict_risk"] = max(0, 100 - scores["source_consistency"]) if external_checked else 50
+    scores["overall_ai_readiness"] = round(sum(scores.values()) / len(scores))
+    return scores
+
 def generate_narrative(summary: Summary, findings: List[FinalFinding], context: AuditContext) -> str:
     if summary.total_findings == 0:
         if context.budgets_consumed.get("pages_rendered", 0) == 0:
@@ -37,6 +59,7 @@ def build_report(context: AuditContext, findings: List[FinalFinding], proactive:
         low=counts["low"],
         proactive_suggestions=len(proactive)
     )
+    summary.scores = calculate_scores(findings, context)
     
     # Add generated narrative to summary
     summary.narrative = generate_narrative(summary, findings, context)
@@ -61,7 +84,8 @@ def build_report(context: AuditContext, findings: List[FinalFinding], proactive:
         summary=summary,
         coverage=coverage,
         findings=findings,
-        proactive_suggestions=proactive
+        proactive_suggestions=proactive,
+        query_simulation=context.query_simulation,
     )
 
 def build_minimal_error_report(input_url: str, error_msg: str) -> AuditReport:

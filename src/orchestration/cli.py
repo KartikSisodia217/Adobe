@@ -13,7 +13,11 @@ async def main():
             report = build_minimal_error_report("unknown", "Invalid input_url in JSON").model_dump(mode='json')
         else:
             # 270s hard stop
-            report = await asyncio.wait_for(execute_audit(input_url), timeout=270.0)
+            external_sources = data.get("external_sources", [])
+            if not isinstance(external_sources, list):
+                external_sources = []
+            discover_external_sources = data.get("discover_external_sources", True)
+            report = await asyncio.wait_for(execute_audit(input_url, external_sources, bool(discover_external_sources)), timeout=270.0)
     except asyncio.TimeoutError:
         url = input_url if 'input_url' in locals() and isinstance(input_url, str) else "unknown"
         report = build_minimal_error_report(url, "Audit hit 270s hard stop").model_dump(mode='json')

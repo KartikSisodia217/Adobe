@@ -20,6 +20,11 @@
       "description": "Checks sampled first-party facts for material contradictions and entity ambiguity."
     },
     {
+      "id": "brand-identity-audit",
+      "path": "skills/brand-identity-audit",
+      "description": "Compares official identity and action destinations with bounded observed public sources to surface conflicting or stale representations."
+    },
+    {
       "id": "engagement-auditor",
       "path": "skills/engagement-auditor",
       "description": "Performs bounded browser checks for modal traps, unnamed controls, and navigation blockers."

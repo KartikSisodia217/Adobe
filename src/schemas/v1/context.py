@@ -12,6 +12,8 @@ class AuditContext(BaseModel):
     rendered_pages: List[RenderedPage]
     coverage_notes: List[str]
     budgets_consumed: Dict[str, Union[int, float]]
+    external_sources: List[Dict] = []
+    query_simulation: List[Dict] = []
 
     def record_limitation(self, msg: str) -> None:
         self.coverage_notes.append(msg)
