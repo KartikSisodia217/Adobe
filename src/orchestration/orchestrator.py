@@ -9,6 +9,7 @@ from src.schemas.v1.facts import StructuredFact
 from src.security.url_normalize import normalize_url
 from src.security.ssrf_guard import resolve_and_validate
 from src.orchestration.errors import FatalValidation, RecoverableError
+from src.orchestration.context_builder import build_context
 
 from src.fetching.raw_fetcher import RawFetcher
 from src.sampling.discovery import discover_candidates
