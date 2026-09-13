@@ -33,13 +33,13 @@ fixtures = {
     
     # E-01: genuine render-only fact
     'e01_render_only': {
-        'index.html': '<script>document.write("<h1>Dynamic</h1><p>Company: Acme Corp</p>");</script>',
+        'index.html': '<body></body><' + 'script>document.body.innerHTML="<h1>Dynamic</h1><p>Company: Acme Corp</p>";</' + 'script>',
         'robots.txt': 'User-agent: *\nAllow: /'
     },
     
     # E-01: hydrated content already present
     'e01_hydrated_present': {
-        'index.html': '<div id="app"><h1>Static</h1><p>Data</p></div><script>document.getElementById("app").innerHTML="<h1>Static</h1><p>Data</p>";</script>',
+        'index.html': '<div id="app"><h1>Static</h1><p>Data</p></div><' + 'script>document.getElementById("app").innerHTML="<h1>Static</h1><p>Data</p>";</' + 'script>',
         'robots.txt': 'User-agent: *\nAllow: /'
     },
     
@@ -69,7 +69,7 @@ fixtures = {
     
     # G-02: focus trap
     'g02_focus_trap': {
-        'index.html': '<body><div id="trap"><a href="#1">1</a><a href="#2">2</a></div><script>document.getElementById("trap").addEventListener("keydown", e=>{if(e.key==="Tab") e.preventDefault();});</script></body>',
+        'index.html': '<body><div id="trap"><a href="#1">1</a><a href="#2">2</a></div><' + 'script>document.getElementById("trap").addEventListener("keydown", e=>{if(e.key==="Tab") e.preventDefault();});</' + 'script></body>',
         'robots.txt': 'User-agent: *\nAllow: /'
     },
     
@@ -132,19 +132,19 @@ fixtures = {
     
     # E-01: JS price
     'e01_js_price': {
-        'index.html': '<script>document.write("<h1>Product</h1><span itemprop=\'price\'>$99</span>");</script>',
+        'index.html': '<body></body><' + 'script>document.body.innerHTML="<h1>Product</h1><span itemprop=\'price\'>$99</span>";</' + 'script>',
         'robots.txt': 'User-agent: *\nAllow: /'
     },
     
     # G-03: Button nav
     'g03_button_nav': {
-        'index.html': '<button onclick="window.location=\'/about.html\'">About</button>',
+        'index.html': '<button onclick="window.location.href=\'/about.html\'">About</button>',
         'robots.txt': 'User-agent: *\nAllow: /'
     },
     
     # F-03: Misleading schema
     'f03_misleading_schema': {
-        'index.html': '<html><head><script type="application/ld+json">{"@type": "Organization", "name": "FakeCorp"}</script></head><body><h1>RealCorp</h1></body></html>',
+        'index.html': '<html><head><' + 'script type="application/ld+json">{"@type": "Organization", "name": "FakeCorp"}</' + 'script></head><body><h1>RealCorp</h1></body></html>',
         'robots.txt': 'User-agent: *\nAllow: /'
     }
 }
