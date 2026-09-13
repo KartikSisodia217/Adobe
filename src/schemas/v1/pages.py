@@ -14,6 +14,7 @@ class RawPage(BaseModel):
     encoding: Optional[str] = None
     canonical_url: Optional[HttpUrl] = None
     page_role: PageRole
+    template_signature: Optional[str] = None
     size_bytes: int
     fetched_at: datetime
     truncated: bool

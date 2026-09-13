@@ -6,6 +6,7 @@ from src.schemas.v1 import RawPage, PageRole
 from src.fetching.raw_fetcher import RawFetcher
 from src.security.url_normalize import normalize_url
 from src.orchestration.errors import RecoverableError
+from src.sampling.semantic import infer_role_multi_signal, get_template_signature
 
 def _is_same_registrable_domain(url1: str, url2: str) -> bool:
     host1 = urlparse(url1).hostname or ""
@@ -30,6 +31,7 @@ async def discover_candidates(homepage_url: str, fetcher: RawFetcher, max_discov
     
     try:
         homepage_raw = await fetcher.fetch_page(homepage_url, page_role="landing")
+        homepage_raw.template_signature = get_template_signature(homepage_raw.html_content)
         fetched_pages.append(homepage_raw)
     except RecoverableError as e:
         raise RecoverableError(f"Homepage fetch failed: {e}")
@@ -50,7 +52,12 @@ async def discover_candidates(homepage_url: str, fetcher: RawFetcher, max_discov
                     if norm_url not in visited and len(visited) < max_discovery_pages:
                         visited.add(norm_url)
                         try:
+                            # We don't know the role yet, fetch as unknown
                             nxt = await fetcher.fetch_page(norm_url, page_role="unknown")
+                            # Infer role and template
+                            nxt.page_role = infer_role_multi_signal(norm_url, nxt.html_content, a.text)
+                            nxt.template_signature = get_template_signature(nxt.html_content)
+                            
                             fetched_pages.append(nxt)
                             queue.append(nxt)
                             if len(fetched_pages) >= max_discovery_pages: break

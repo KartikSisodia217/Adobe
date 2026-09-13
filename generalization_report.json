@@ -5,42 +5,25 @@
     "f1": null
   },
   "holdout": {
-    "precision": 0.3333333333333333,
-    "recall": 0.1111111111111111,
-    "f1": 0.16666666666666666
+    "precision": 0.5,
+    "recall": 0.15384615384615385,
+    "f1": 0.23529411764705882
   },
   "site_architecture_coverage": [
-    "d01_unusual_robots",
-    "g03_nav_404",
-    "g02_non_blocking",
-    "g02_focus_trap",
-    "g03_spa_nav",
-    "f03_clear",
-    "d02_diff_products",
-    "e02_decorative",
-    "e01_render_only",
-    "g03_trad_nav",
-    "d02_monthly_annual",
-    "d02_variants",
-    "stale_claim",
-    "d02_same_entity",
-    "e02_factual_non_text",
-    "f03_ambiguous",
-    "g02_true_modal",
-    "deep_architecture",
-    "clean_site",
-    "e01_hydrated_present"
+    "spa",
+    "hybrid"
   ],
   "role_coverage": [
+    "unknown",
     "detail",
     "landing",
-    "contact",
-    "unknown"
+    "contact"
   ],
   "template_coverage": [
-    "unknown_template"
+    "main",
+    "nav"
   ],
   "sample_efficiency": "dynamically_measured",
-  "runtime": 63.52971291542053,
+  "runtime": 77.20598101615906,
   "limitations": []
 }

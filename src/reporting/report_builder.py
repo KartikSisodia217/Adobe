@@ -65,6 +65,13 @@ def build_report(context: AuditContext, findings: List[FinalFinding], proactive:
     summary.narrative = generate_narrative(summary, findings, context)
     
     roles_sampled = list(set([p.page_role for p in context.raw_pages]))
+    templates_sampled = list(set([p.template_signature for p in context.raw_pages if p.template_signature]))
+    
+    # Infer basic architecture from JS usage and number of pages (this is a simplified model, normally dynamic)
+    arch = "static"
+    if context.rendered_pages:
+        # If JS rendering made a substantial difference or took over, it's SPA/Hybrid
+        arch = "hybrid" if len(context.raw_pages) > 1 else "spa"
     
     coverage = Coverage(
         pages_discovered=len(context.raw_pages), # Using fetched count for simplicity here
@@ -72,6 +79,8 @@ def build_report(context: AuditContext, findings: List[FinalFinding], proactive:
         pages_rendered=context.budgets_consumed["pages_rendered"],
         page_roles_sampled=roles_sampled,
         not_observed_roles=[],
+        templates_sampled=templates_sampled,
+        site_architecture=arch,
         limitations=context.coverage_notes,
         runtime_ms=context.budgets_consumed.get("runtime_ms", 0),
         external_calls=ExternalCalls(wikidata=context.budgets_consumed.get("wikidata_calls", 0))

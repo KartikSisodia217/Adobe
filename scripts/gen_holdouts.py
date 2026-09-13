@@ -123,6 +123,29 @@ fixtures = {
         'category/1/index.html': '<a href="/category/1/item/99/index.html">Item 99</a>',
         'category/1/item/99/index.html': '<h1>Item 99</h1><p>$45</p>',
         'robots.txt': 'User-agent: *\nAllow: /'
+    },
+    
+    # D-01: sneaky robots
+    'd01_sneaky_robots': {
+        'robots.txt': 'User-agent: Googlebot\nDisallow: /private\n\nUser-agent: *\nDisallow: /'
+    },
+    
+    # E-01: JS price
+    'e01_js_price': {
+        'index.html': '<script>document.write("<h1>Product</h1><span itemprop=\'price\'>$99</span>");</script>',
+        'robots.txt': 'User-agent: *\nAllow: /'
+    },
+    
+    # G-03: Button nav
+    'g03_button_nav': {
+        'index.html': '<button onclick="window.location=\'/about.html\'">About</button>',
+        'robots.txt': 'User-agent: *\nAllow: /'
+    },
+    
+    # F-03: Misleading schema
+    'f03_misleading_schema': {
+        'index.html': '<html><head><script type="application/ld+json">{"@type": "Organization", "name": "FakeCorp"}</script></head><body><h1>RealCorp</h1></body></html>',
+        'robots.txt': 'User-agent: *\nAllow: /'
     }
 }
 

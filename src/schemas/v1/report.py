@@ -24,6 +24,8 @@ class Coverage(BaseModel):
     pages_rendered: int
     page_roles_sampled: List[str]
     not_observed_roles: List[str]
+    templates_sampled: List[str] = Field(default_factory=list)
+    site_architecture: str = "unknown"
     limitations: List[str]
     runtime_ms: int
     external_calls: ExternalCalls = Field(default_factory=ExternalCalls)

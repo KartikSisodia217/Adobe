@@ -41,7 +41,11 @@ HOLDOUTS = {
     8117: ("f03_clear", []),
     8118: ("stale_claim", ["F-01"]),
     8119: ("clean_site", []),
-    8120: ("deep_architecture", [])
+    8120: ("deep_architecture", []),
+    8121: ("d01_sneaky_robots", ["D-01"]),
+    8122: ("e01_js_price", ["E-01"]),
+    8123: ("g03_button_nav", ["G-03"]),
+    8124: ("f03_misleading_schema", ["F-03"])
 }
 
 async def run_benchmark():
@@ -95,10 +99,12 @@ async def run_benchmark():
                     detector_stats[d]["fp"] += 1
                     
             coverage = report.get("coverage", {})
-            architectures.add(d_name)
+            if coverage.get("site_architecture"):
+                architectures.add(coverage.get("site_architecture"))
             for r in coverage.get("page_roles_sampled", []):
                 roles.add(r)
-            templates.add("unknown_template") # Simulating template coverage tracking
+            for t in coverage.get("templates_sampled", []):
+                if t: templates.add(t)
             
         except Exception as e:
             print(f"Error on {url}: {e}")
