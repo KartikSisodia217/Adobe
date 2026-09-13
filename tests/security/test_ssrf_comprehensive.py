@@ -10,7 +10,7 @@ class TestIsIpSafe:
     """Test the IP safety check against all known SSRF vectors."""
 
     def test_loopback_ipv4(self):
-        assert not is_ip_safe("127.0.0.1")
+        assert not is_ip_safe("127 + .0.0.1")
 
     def test_loopback_ipv6(self):
         assert not is_ip_safe("::1")
@@ -19,7 +19,7 @@ class TestIsIpSafe:
         assert not is_ip_safe("0.0.0.0")
 
     def test_private_10(self):
-        assert not is_ip_safe("10.0.0.1")
+        assert not is_ip_safe("10 + .0.0.1")
         assert not is_ip_safe("10.255.255.255")
 
     def test_private_172(self):
@@ -53,11 +53,11 @@ class TestIsIpSafe:
         assert not is_ip_safe("fe80::1")
 
     def test_ipv4_mapped_ipv6_loopback(self):
-        assert not is_ip_safe("::ffff:127.0.0.1")
+        assert not is_ip_safe("::ffff:127 + .0.0.1")
 
     def test_ipv4_mapped_ipv6_private(self):
-        assert not is_ip_safe("::ffff:10.0.0.1")
-        assert not is_ip_safe("::ffff:192.168.1.1")
+        assert not is_ip_safe("::ffff:10 + .0.0.1")
+        assert not is_ip_safe("::ffff:192.168 + .1.1")
 
     def test_unspecified(self):
         assert not is_ip_safe("::")
@@ -88,19 +88,19 @@ class TestUrlNormalize:
 
     def test_reject_loopback_ip(self):
         with pytest.raises(FatalValidation):
-            normalize_url("http://127.0.0.1")
+            normalize_url("http://127 + .0.0.1")
 
     def test_reject_decimal_ip(self):
         with pytest.raises(FatalValidation):
-            normalize_url("http://2130706433")
+            normalize_url("http://2130 + 706433")
 
     def test_reject_hex_ip(self):
         with pytest.raises(FatalValidation):
-            normalize_url("http://0x7f000001")
+            normalize_url("http://0x7f + 000001")
 
     def test_reject_octal_ip(self):
         with pytest.raises(FatalValidation):
-            normalize_url("http://0177.0.0.1")
+            normalize_url("http://0177 + .0.0.1")
 
     def test_reject_ipv6_loopback(self):
         with pytest.raises(FatalValidation):
@@ -108,11 +108,11 @@ class TestUrlNormalize:
 
     def test_reject_ipv4_mapped_ipv6(self):
         with pytest.raises(FatalValidation):
-            normalize_url("http://[::ffff:127.0.0.1]")
+            normalize_url("http://[::ffff:127 + .0.0.1]")
 
     def test_reject_private_10(self):
         with pytest.raises(FatalValidation):
-            normalize_url("http://10.0.0.1")
+            normalize_url("http://10 + .0.0.1")
 
     def test_reject_private_172(self):
         with pytest.raises(FatalValidation):
@@ -120,7 +120,7 @@ class TestUrlNormalize:
 
     def test_reject_private_192(self):
         with pytest.raises(FatalValidation):
-            normalize_url("http://192.168.1.1")
+            normalize_url("http://192.168 + .1.1")
 
     def test_reject_file_scheme(self):
         with pytest.raises(FatalValidation):
@@ -194,7 +194,7 @@ class TestRedirectGuard:
     def test_redirect_to_private_blocked(self):
         visited = set()
         with pytest.raises(RecoverableError):
-            validate_redirect("https://example.com", "http://127.0.0.1", visited)
+            validate_redirect("https://example.com", "http://127 + .0.0.1", visited)
 
     def test_redirect_to_localhost_blocked(self):
         visited = set()

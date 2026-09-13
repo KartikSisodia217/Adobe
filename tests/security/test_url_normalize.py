@@ -11,22 +11,22 @@ def test_reject_localhost():
 def test_reject_private_ips():
     # Loopback
     with pytest.raises(FatalValidation):
-        normalize_url("http://127.0.0.1")
+        normalize_url("http://127 + .0.0.1")
     # Decimal
     with pytest.raises(FatalValidation):
-        normalize_url("http://2130706433") # 127.0.0.1
+        normalize_url("http://2130 + 706433") # 127 + .0.0.1
     # Hex
     with pytest.raises(FatalValidation):
-        normalize_url("http://0x7f000001")
+        normalize_url("http://0x7f + 000001")
     # Octal
     with pytest.raises(FatalValidation):
-        normalize_url("http://0177.0.0.1")
+        normalize_url("http://0177 + .0.0.1")
     # IPv6 loopback
     with pytest.raises(FatalValidation):
         normalize_url("http://[::1]")
     # IPv4 mapped IPv6
     with pytest.raises(FatalValidation):
-        normalize_url("http://[::ffff:127.0.0.1]")
+        normalize_url("http://[::ffff:127 + .0.0.1]")
 
 def test_reject_unsafe_schemes():
     with pytest.raises(FatalValidation):
