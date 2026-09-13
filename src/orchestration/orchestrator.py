@@ -18,6 +18,7 @@ from src.schemas.v1 import RenderedPage, AuditReport, Summary, Coverage
 from src.access_content.auditor import run_access_content_audit
 from src.fact_integrity.auditor import run_fact_integrity
 from src.brand_identity.auditor import run_brand_identity_audit
+from src.brand_identity.discovery import discover_external_sources
 from src.engagement.engagement_auditor import run_interactive_tests
 
 from src.fusion.normalize import normalize_findings
@@ -27,7 +28,7 @@ from src.fusion.scoring import assign_severity_and_confidence
 from src.fusion.cap import cap_findings
 from src.reporting.report_builder import build_report, build_minimal_error_report
 
-async def execute_audit(input_url: str, external_sources: list[dict] | None = None) -> dict:
+async def execute_audit(input_url: str, external_sources: list[dict] | None = None, discover_external_sources_enabled: bool = True) -> dict:
     start_time = time.monotonic()
     
     async def _do_audit() -> dict:
@@ -59,6 +60,8 @@ async def execute_audit(input_url: str, external_sources: list[dict] | None = No
             homepage_raw, discovered, sitemaps = await discover_candidates(norm_url, fetcher)
             context.raw_pages.append(homepage_raw)
             context.budgets_consumed["raw_pages_fetched"] += 1
+            discovered_external = await discover_external_sources(context.raw_pages, norm_url, enabled=discover_external_sources_enabled)
+            context.external_sources.extend(discovered_external)
             
             # 8-9. Candidate Selection
             raw_cands = select_raw_candidates(str(homepage_raw.url), discovered, sitemaps)

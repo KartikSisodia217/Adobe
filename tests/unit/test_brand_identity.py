@@ -52,3 +52,10 @@ def test_legitimate_sameas_or_no_conflict_is_clean():
 def test_insufficient_evidence_does_not_invent_conflict():
     audit = context("<html><body><h1>Northstar</h1></body></html>")
     assert run_brand_identity_audit(audit) == []
+
+def test_historical_platform_with_shared_identity_and_old_destination_conflicts():
+    old = '''<script type="application/ld+json">{"@type":"Organization","name":"Northstar"}</script>
+    <h1>Northstar Bootcamp</h1><a href="https://platform.example/checkout">Buy Northstar Bootcamp</a>'''
+    audit = context(OFFICIAL, [{"url": "https://platform.example/northstar", "html": old}])
+    findings = run_brand_identity_audit(audit)
+    assert any(f.detector_id == "B-01" for f in findings)
